@@ -1,0 +1,425 @@
+# 保留原有任务用于兼容性
+sprint_planning_task:
+  description: >
+    作为敏捷开发流程的核心协调者，你需要组织一次Sprint规划会议。
+    
+    请根据以下信息制定一个详细的Sprint计划：
+    1. 项目名称：{project_name}
+    2. 项目描述：{project_description}
+    3. Sprint周期：{sprint_duration}天
+    
+    你的Sprint计划应包括：
+    - Sprint目标概述
+    - 待办事项列表（包括用户故事和技术任务）
+    - 每个任务的优先级和预估工作量
+    - 团队成员分工
+    - 关键里程碑和交付物
+  expected_output: >
+    一份详细的Sprint计划文档，包含Sprint目标、待办事项列表、任务分配和时间安排。
+  agent: blueprint_design_agent
+
+# 迭代启动阶段任务
+
+system_design_task:
+  description: >
+    作为系统架构设计专家，你需要根据用户需求创建系统架构方案。
+    
+    项目信息：
+    1. 项目名称：{project_name}
+    2. 项目描述：{project_description}
+    
+    请完成以下工作：
+    1. 分析项目需求，确定系统的主要功能和特性
+    2. 设计系统的整体架构，包括主要组件和模块
+    3. 选择适合的技术栈和框架
+    4. 考虑系统的可扩展性、性能和安全性
+    5. 创建系统架构图和技术选型文档
+  expected_output: >
+    一份系统架构设计方案，包含系统架构图、技术选型和架构决策说明。
+  agent: system_design_agent
+
+requirement_analysis_task:
+  description: >
+    作为需求分析专家，你需要分析和细化用户需求，创建优先级排序的需求列表。
+    
+    项目信息：
+    1. 项目名称：{project_name}
+    2. 项目描述：{project_description}
+    
+    系统架构设计方案：
+    {system_design}
+    
+    请完成以下工作：
+    1. 分析用户需求，提取关键功能点
+    2. 创建用户故事和验收标准
+    3. 对需求进行优先级排序
+    4. 识别潜在的需求风险和依赖关系
+    5. 使用文件写入工具保存你的需求分析文档
+    
+    重要：完成分析后，你必须使用文件写入工具将你的需求分析文档保存到文件中。这是任务的必要部分，不完成此步骤将视为任务失败。
+    使用以下格式保存：
+    - 文件名：requirement_{project_id}.md，其中project_id使用当前日期，例如20250528
+    - 项目名称：使用输入中提供的项目名称
+    - 内容：你的完整需求分析文档
+    
+    不要只是输出文档内容，而是必须使用文件写入工具保存它。
+  expected_output: >
+    一份详细的需求分析文档，包含优先级排序的需求列表、用户故事和验收标准。
+    文档应该已经使用文件写入工具保存到Project/project_{project_id}_{project_name}/requirement_{project_id}.md文件中。
+  agent: requirement_analysis_agent
+  context:
+    - system_design_task
+
+# 蓝图设计阶段任务
+
+blueprint_design_task:
+  description: >
+    作为系统蓝图设计专家，你需要创建系统蓝图和接口规范。
+    
+    需求分析文档：
+    {requirement_analysis}
+    
+    系统架构设计方案：
+    {system_design}
+    
+    请完成以下工作：
+    1. 创建系统蓝图，包含所有组件和模块
+    2. 使用PlantUML生成系统结构图
+    3. 定义组件间的接口规范
+    4. 描述系统的数据流和处理流程
+    5. 使用文件写入工具保存你的PlantUML图表和蓝图文档
+    
+    重要：完成设计后，你必须使用文件写入工具将你的PlantUML图表保存到文件中。这是任务的必要部分，不完成此步骤将视为任务失败。
+    使用以下格式保存：
+    - 文件名：{project_name}_图表类型_模块名称.puml，例如：librarysystem_class_borrowing.puml
+    - 内容：完整的PlantUML代码，包括@startuml和@enduml标记
+    
+    每个图表必须包含简短的说明，描述其表示的内容。根据项目阶段选择适当的图表类型：
+    - 需求分析阶段：用例图、活动图
+    - 系统设计阶段：类图、文件结构图、看板图
+    - 部署设计阶段：部署图
+    - 流程设计阶段：序列图、活动图
+    
+    不要只是输出图表内容，而是必须使用文件写入工具保存它。
+  expected_output: >
+    一份系统蓝图文档，包含PlantUML系统结构图、接口规范和数据流描述。
+    所有PlantUML图表应该已经使用文件写入工具保存到.puml格式的文件中。
+  agent: blueprint_design_agent
+  context:
+    - requirement_analysis_task
+    - system_design_task
+
+# 实现阶段任务
+
+frontend_design_task:
+  description: >
+    作为前端设计实现专家，你需要根据系统蓝图实现用户界面和前端逻辑。
+    
+    系统蓝图文档：
+    {blueprint_design}
+    
+    请完成以下工作：
+    1. 设计用户界面和交互流程
+    2. 创建UI组件和页面布局
+    3. 实现前端业务逻辑
+    4. 实现与后端API的调用
+    5. 创建一个完整的、可运行的前端项目代码
+    6. 使用文件写入工具保存你的前端实现报告和所有代码文件
+    
+    重要：你必须创建一个完整的、可运行的前端项目，而不仅仅是报告或代码片段。这个项目应该包含所有必要的文件，如HTML、CSS、JavaScript/TypeScript文件，以及任何必要的配置文件。
+    
+    项目代码应保存在以下目录结构中：
+    - Project/frontend/
+      - index.html (主页面)
+      - css/ (样式文件)
+      - js/ (JavaScript文件)
+      - components/ (组件文件，如果适用)
+      - assets/ (图像和其他资源)
+    
+    同时，你必须使用文件写入工具将你的前端实现报告保存到文件中：
+    - 文件名：frontend_implementation_report.md
+    - 内容：你的完整前端实现报告，包含UI设计、组件结构、业务逻辑实现、API调用说明，以及如何运行和测试项目的说明
+    
+    所有代码文件必须是完整的、可直接运行的，而不仅仅是代码片段或示例。
+  expected_output: >
+    一个完整的、可运行的前端项目，包含所有必要的HTML、CSS、JavaScript文件和其他资源，保存在Project/frontend/目录中。
+    一份前端实现报告，包含UI设计、组件结构、业务逻辑实现、API调用说明和项目运行指南，保存在frontend_implementation_report.md文件中。
+  agent: frontend_design_agent
+  context:
+    - blueprint_design_task
+
+backend_design_task:
+  description: >
+    作为后端设计实现专家，你需要根据系统蓝图实现后端服务和API。
+    
+    系统蓝图文档：
+    {blueprint_design}
+    
+    请完成以下工作：
+    1. 设计数据模型和数据库结构
+    2. 实现业务逻辑和服务层
+    3. 创建API接口和文档
+    4. 确保代码的可测试性和可维护性
+    5. 创建一个完整的、可运行的后端项目代码
+    6. 使用文件写入工具保存你的后端实现报告和所有代码文件
+    
+    重要：你必须创建一个完整的、可运行的后端项目，而不仅仅是报告或代码片段。这个项目应该包含所有必要的文件，如模型定义、控制器、服务层、数据访问层，以及任何必要的配置文件。
+    
+    项目代码应保存在以下目录结构中：
+    - Project/backend/
+      - src/ (源代码目录)
+        - models/ (数据模型)
+        - controllers/ (控制器)
+        - services/ (服务层)
+        - repositories/ (数据访问层，如果适用)
+      - config/ (配置文件)
+      - tests/ (测试文件，如果适用)
+      - docs/ (API文档)
+    
+    同时，你必须使用文件写入工具将你的后端实现报告保存到文件中：
+    - 文件名：backend_implementation_report.md
+    - 内容：你的完整后端实现报告，包含数据模型、业务逻辑实现、API接口文档、部署说明，以及如何运行和测试项目的说明
+    
+    所有代码文件必须是完整的、可直接运行的，而不仅仅是代码片段或示例。
+  expected_output: >
+    一个完整的、可运行的后端项目，包含所有必要的模型、控制器、服务和配置文件，保存在Project/backend/目录中。
+    一份后端实现报告，包含数据模型、业务逻辑实现、API接口文档、部署说明和项目运行指南，保存在backend_implementation_report.md文件中。
+  agent: backend_design_agent
+  context:
+    - blueprint_design_task
+
+# 管理系统任务
+
+version_control_task:
+  description: >
+    作为版本控制管理专家，你需要管理项目中所有制品的版本历史。
+    
+    系统蓝图文档：
+    {blueprint_design}
+    
+    前端实现报告：
+    {frontend_design}
+    
+    后端实现报告：
+    {backend_design}
+    
+    请完成以下工作：
+    1. 为所有文档和代码分配版本号
+    2. 记录变更历史和提交记录
+    3. 创建版本控制策略和分支管理计划
+    4. 防止代码版本冲突的措施
+    5. 使用文件写入工具保存你的版本控制报告
+    
+    重要：完成报告后，你必须使用文件写入工具将你的版本控制报告保存到文件中。这是任务的必要部分，不完成此步骤将视为任务失败。
+    使用以下格式保存：
+    - 文件名：version_control_report.md
+    - 内容：你的完整版本控制报告，包含版本号分配、变更历史记录和版本控制策略
+  expected_output: >
+    一份版本控制报告，包含版本号分配、变更历史记录和版本控制策略。
+    报告应该已经使用文件写入工具保存到version_control_report.md文件中。
+  agent: version_control_agent
+  context:
+    - blueprint_design_task
+    - frontend_design_task
+    - backend_design_task
+
+agile_dashboard_task:
+  description: >
+    作为敏捷仪表盘管理专家，你需要跟踪项目进度和状态。
+    
+    需求分析文档：
+    {requirement_analysis}
+    
+    前端实现报告：
+    {frontend_design}
+    
+    后端实现报告：
+    {backend_design}
+    
+    请完成以下工作：
+    1. 创建项目进度仪表盘
+    2. 记录和可视化关键指标
+    3. 识别项目风险和阻碍
+    4. 生成项目状态报告
+    5. 使用文件写入工具保存你的项目状态报告和仪表盘可视化
+    
+    重要：完成报告后，你必须使用文件写入工具将你的项目状态报告保存到文件中。这是任务的必要部分，不完成此步骤将视为任务失败。
+    使用以下格式保存：
+    - 文件名：agile_dashboard_report.md
+    - 内容：你的完整项目状态报告，包含进度仪表盘、关键指标分析和风险评估
+    
+    如果有仪表盘可视化图表，也应使用文件写入工具保存到适当的文件中。
+  expected_output: >
+    一份项目状态报告，包含进度仪表盘、关键指标分析和风险评估。
+    报告应该已经使用文件写入工具保存到agile_dashboard_report.md文件中。
+  agent: agile_dashboard_agent
+  context:
+    - requirement_analysis_task
+    - frontend_design_task
+    - backend_design_task
+
+feedback_planning_task:
+  description: >
+    作为反馈规划专家，你需要收集和分析用户反馈，规划下一轮迭代内容。
+    
+    前端实现报告：
+    {frontend_design}
+    
+    后端实现报告：
+    {backend_design}
+    
+    项目状态报告：
+    {agile_dashboard}
+    
+    请完成以下工作：
+    1. 收集和整理用户反馈
+    2. 分析反馈中的关键点和模式
+    3. 提出改进建议
+    4. 规划下一轮迭代的内容和优先级
+    5. 使用文件写入工具保存你的反馈分析和迭代规划报告
+    
+    重要：完成报告后，你必须使用文件写入工具将你的反馈分析和迭代规划报告保存到文件中。这是任务的必要部分，不完成此步骤将视为任务失败。
+    使用以下格式保存：
+    - 文件名：feedback_planning_report.md
+    - 内容：你的完整反馈分析和迭代规划报告，包含用户反馈分析、改进建议和下一轮迭代计划
+  expected_output: >
+    一份反馈分析和迭代规划报告，包含用户反馈分析、改进建议和下一轮迭代计划。
+    报告应该已经使用文件写入工具保存到feedback_planning_report.md文件中。
+  agent: feedback_planning_agent
+  context:
+    - frontend_design_task
+    - backend_design_task
+    - agile_dashboard_task
+
+# 保留原有任务用于兼容性
+
+development_task:
+  description: >
+    作为开发实现专家，你需要根据需求分析结果和系统蓝图设计和实现相应的功能。
+    
+    需求分析文档：
+    {requirement_analysis}
+    
+    系统蓝图文档：
+    {blueprint_design}
+    
+    请完成以下工作：
+    1. 仔细分析系统蓝图中的PlantUML图表，确保理解系统结构和组件关系
+    2. 严格按照蓝图中定义的类、接口和关系进行代码实现
+    3. 设计功能的技术实现方案，确保与蓝图保持一致
+    4. 创建一个完整的、可运行的项目代码
+    5. 确保代码符合最佳实践和设计模式
+    6. 记录实现过程中的技术决策和注意事项
+    7. 使用文件写入工具保存你的代码实现和开发报告
+    
+    重要：你必须创建一个完整的、可运行的项目，而不仅仅是代码片段或示例。这个项目应该包含所有必要的文件，严格按照Blueprint Agent生成的蓝图进行代码实现，不要偏离蓝图定义的结构和接口。
+    
+    项目代码应保存在以下目录结构中：
+    - Project/implementation/
+      - src/ (源代码目录)
+      - config/ (配置文件)
+      - tests/ (测试文件，如果适用)
+      - docs/ (文档)
+    
+    同时，你必须使用文件写入工具将你的开发实现报告保存到文件中：
+    - 文件名：development_implementation_report.md
+    - 内容：你的完整开发实现报告，包含技术设计方案、关键代码实现、技术决策说明、注意事项，以及如何运行和测试项目的说明
+    
+    所有代码文件必须是完整的、可直接运行的，而不仅仅是代码片段或示例。
+  expected_output: >
+    一个完整的、可运行的项目，包含所有必要的代码文件和配置，保存在Project/implementation/目录中。
+    一份开发实现报告，包含技术设计方案、关键代码实现、技术决策说明、注意事项和项目运行指南，保存在development_implementation_report.md文件中。
+  agent: developer_agent
+  context:
+    - requirement_analysis_task
+
+testing_task:
+  description: >
+    作为测试验证专家，你需要设计和执行测试用例，验证开发实现的功能。
+    
+    开发实现报告：
+    {development_report}
+    
+    需求分析文档：
+    {requirement_analysis}
+    
+    系统蓝图文档：
+    {blueprint_design}
+    
+    请完成以下工作：
+    1. 设计全面的测试用例，覆盖各种场景
+    2. 执行测试并记录结果
+    3. 发现并报告任何缺陷或问题
+    4. 提出改进建议
+    5. 使用文件写入工具保存你的测试报告
+    
+    重要：完成报告后，你必须使用文件写入工具将你的测试报告保存到文件中。这是任务的必要部分，不完成此步骤将视为任务失败。
+    使用以下格式保存：
+    - 文件名：testing_report.md
+    - 内容：你的完整测试报告，包含测试用例、测试结果、发现的问题和改进建议
+  expected_output: >
+    一份测试报告，包含测试用例、测试结果、发现的问题和改进建议。
+    报告应该已经使用文件写入工具保存到testing_report.md文件中。
+  agent: testing_agent
+  context:
+    - development_task
+    - requirement_analysis_task
+
+system_design_summary_task:
+  description: >
+    作为系统蓝图设计专家，你需要根据整个项目的成果创建一个最终的系统设计总结。
+    
+    系统架构设计方案：
+    {system_design}
+    
+    需求分析文档：
+    {requirement_analysis}
+    
+    系统蓝图文档：
+    {blueprint_design}
+    
+    前端实现报告：
+    {frontend_design}
+    
+    后端实现报告：
+    {backend_design}
+    
+    版本控制报告：
+    {version_control}
+    
+    项目状态报告：
+    {agile_dashboard}
+    
+    反馈分析和迭代规划报告：
+    {feedback_planning}
+    
+    请创建一个系统设计总结，包含：
+    1. 系统的最终架构和组件
+    2. 关键技术选择和架构决策
+    3. 系统的优势和限制
+    4. 未来可能的扩展和改进
+    5. 使用PlantUML创建最终系统架构图
+    6. 使用文件写入工具保存你的系统设计总结和PlantUML图表
+    
+    重要：完成总结后，你必须使用文件写入工具将你的系统设计总结保存到文件中。这是任务的必要部分，不完成此步骤将视为任务失败。
+    使用以下格式保存：
+    - 文件名：system_design_summary.md
+    - 内容：你的完整系统设计总结，包含最终系统架构、技术选择、优势限制和未来展望
+    
+    对于PlantUML图表，使用以下格式保存：
+    - 文件名：{project_name}_final_architecture.puml
+    - 内容：完整的PlantUML代码，包括@startuml和@enduml标记
+  expected_output: >
+    一份系统设计总结文档，包含最终系统架构、技术选择、优势限制和未来展望。
+    文档应该已经使用文件写入工具保存到system_design_summary.md文件中。
+    最终系统架构图应该已经使用文件写入工具保存到.puml格式的文件中。
+  agent: blueprint_design_agent
+  context:
+    - system_design_task
+    - requirement_analysis_task
+    - blueprint_design_task
+    - frontend_design_task
+    - backend_design_task
+    - version_control_task
+    - agile_dashboard_task
+    - feedback_planning_task
