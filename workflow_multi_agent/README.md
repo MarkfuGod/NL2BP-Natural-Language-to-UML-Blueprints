@@ -188,11 +188,148 @@ workflow_multi_agent/
 - 通过 $A_{vc}$ 管理版本历史
 - 通过 $A_{fp}$ 分析反馈和规划迭代
 
+## 🤖 CrewAI 实现指南
+
+### 关于 CrewAI
+
+CrewAI 是一个强大的多代理协作框架，专门用于构建和管理复杂的AI代理团队。本项目使用 CrewAI 来实现多代理协作开发工作流程。
+
+### 安装和设置
+
+#### 1. 安装 CrewAI
+
+```bash
+pip install crewai
+```
+
+#### 2. 从源码安装（开发版本）
+
+```bash
+git clone https://github.com/crewAIInc/crewAI.git
+cd crewAI
+pip install -e .
+```
+
+### 快速开始
+
+#### 基本概念
+
+- **Agent（代理）**: 具有特定角色和技能的AI实体
+- **Task（任务）**: 需要完成的具体工作
+- **Crew（团队）**: 多个代理组成的协作团队
+- **Process（流程）**: 任务执行的顺序和方式
+
+#### 创建代理示例
+
+```python
+from crewai import Agent, Task, Crew
+
+# 创建需求分析代理
+requirements_agent = Agent(
+    role='Requirements Analyst',
+    goal='分析和细化用户需求，创建优先级排序的需求列表',
+    backstory='你是一位经验丰富的需求分析师，擅长将模糊的用户需求转化为清晰的功能规格。',
+    verbose=True
+)
+
+# 创建系统设计代理
+system_design_agent = Agent(
+    role='System Architect',
+    goal='设计系统架构和技术方案',
+    backstory='你是一位资深的系统架构师，能够设计可扩展和可维护的系统架构。',
+    verbose=True
+)
+```
+
+#### 定义任务
+
+```python
+# 需求分析任务
+requirements_task = Task(
+    description='分析用户需求并生成结构化的需求文档',
+    agent=requirements_agent
+)
+
+# 系统设计任务
+design_task = Task(
+    description='基于需求文档设计系统架构',
+    agent=system_design_agent
+)
+```
+
+#### 创建团队
+
+```python
+# 创建开发团队
+dev_crew = Crew(
+    agents=[requirements_agent, system_design_agent],
+    tasks=[requirements_task, design_task],
+    verbose=2
+)
+
+# 执行工作流程
+result = dev_crew.kickoff()
+```
+
+### 高级功能
+
+#### 1. 自定义工具集成
+
+```python
+from crewai_tools import SerperDevTool, WebsiteSearchTool
+
+# 为代理添加工具
+search_tool = SerperDevTool()
+web_tool = WebsiteSearchTool()
+
+agent_with_tools = Agent(
+    role='Research Specialist',
+    tools=[search_tool, web_tool],
+    # ... 其他配置
+)
+```
+
+#### 2. 内存和上下文管理
+
+```python
+crew = Crew(
+    agents=[agent1, agent2],
+    tasks=[task1, task2],
+    memory=True,  # 启用团队记忆
+    verbose=2
+)
+```
+
+#### 3. 协作流程控制
+
+```python
+from crewai import Process
+
+crew = Crew(
+    agents=[agent1, agent2, agent3],
+    tasks=[task1, task2, task3],
+    process=Process.sequential,  # 或 Process.hierarchical
+    verbose=2
+)
+```
+
+### 项目集成
+
+本项目的 `crewai_code/` 目录包含了完整的 CrewAI 实现代码，展示了如何将上述9个Agent集成到一个协作系统中。
+
+### 学习资源
+
+- **官方文档**: [https://docs.crewai.com/introduction](https://docs.crewai.com/introduction)
+- **GitHub仓库**: [https://github.com/crewAIInc/crewAI](https://github.com/crewAIInc/crewAI)
+- **示例项目**: [CrewAI Examples](https://github.com/crewAIInc/crewAI-examples)
+
 ## 🔗 相关资源
 
 - [多代理工作流程图](workflow_pic/multi_agent_workflow.svg)
 - [CrewAI实现代码](crewai_code/)
 - [单代理工作流程对比](../workflow_single_agent/)
+- [CrewAI官方文档](https://docs.crewai.com/introduction)
+- [CrewAI GitHub仓库](https://github.com/crewAIInc/crewAI)
 
 ---
 
