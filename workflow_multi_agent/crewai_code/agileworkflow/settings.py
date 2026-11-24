@@ -48,6 +48,12 @@ class Settings:
     output_dir: Path = field(default_factory=lambda: Path("output"))
     language: str = DEFAULT_LANGUAGE
     verbose: bool = False
+    # Quality gates (each one is skipped, with the reason recorded, if its tool is missing)
+    check_diagrams: bool = True
+    max_repair_rounds: int = 2
+    run_tests: bool = True
+    git_history: bool = True
+    conformance_threshold: float = 0.9
 
     @classmethod
     def from_env(cls, **overrides) -> Settings:

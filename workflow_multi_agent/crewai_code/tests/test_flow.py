@@ -10,8 +10,10 @@ EXPECTED_ORDER_CONSTRAINTS = [
     ("requirement_analysis", "sprint_planning"),
     ("blueprint_design", "frontend_design"),
     ("blueprint_design", "backend_design"),
-    ("frontend_design", "version_control"),
-    ("backend_design", "version_control"),
+    ("frontend_design", "verify"),
+    ("backend_design", "verify"),
+    ("verify", "version_control"),
+    ("verify", "agile_dashboard"),
     ("sprint_planning", "agile_dashboard"),
     ("agile_dashboard", "feedback_planning"),
     ("version_control", "system_design_summary"),
@@ -20,6 +22,8 @@ EXPECTED_ORDER_CONSTRAINTS = [
 
 
 class StubRunner:
+    replies: dict = {}
+
     def __init__(self):
         self.started, self.finished, self.values = [], [], {}
         self.active, self.max_active = 0, 0
@@ -32,7 +36,9 @@ class StubRunner:
         await asyncio.sleep(0.05)
         self.active -= 1
         self.finished.append(stage)
-        text = f"# {stage}\n\n@startuml {stage}_diagram\nA -> B\n@enduml\n"
+        text = (
+            self.replies.get(stage) or f"# {stage}\n\n@startuml {stage}_diagram\nA -> B\n@enduml\n"
+        )
         return StageResult(stage, text, {"total_tokens": 10})
 
 
@@ -61,7 +67,10 @@ def test_every_stage_runs_once_in_dependency_order(settings):
     assert sorted(runner.started) == sorted(stage_names())
     assert len(runner.started) == len(set(runner.started)) == 10
     for before, after in EXPECTED_ORDER_CONSTRAINTS:
+        if "verify" in (before, after):  # verify is flow code, not an LLM stage
+            continue
         assert runner.finished.index(before) < runner.started.index(after), (before, after)
+    assert runner.finished.index("backend_design") < runner.started.index("version_control")
     assert runner.max_active >= 2, "frontend/backend should overlap"
 
     root = flow.workspace.root
@@ -73,6 +82,14 @@ def test_every_stage_runs_once_in_dependency_order(settings):
     assert manifest["workflow"] == "multi_agent"
     assert set(manifest["stages"]) == set(stage_names())
     assert manifest["token_usage"]["system_design"] == {"total_tokens": 10}
+    assert manifest["token_usage_total"]["total_tokens"] == 100
+    assert manifest["quality"]["tests"]["status"] == "skipped"
+    # real git history of the run directory, one commit per stage plus bookkeeping
+    assert len(manifest["commits"]) == 12  # requirements + 10 stages + verification
+    [vc] = runner.values["version_control"]
+    assert "docs(system_design)" in vc["git_log"]
+    [dash] = runner.values["agile_dashboard"]
+    assert "PlantUML" in dash["quality_signals"]
 
 
 def test_stages_receive_previous_outputs(settings):

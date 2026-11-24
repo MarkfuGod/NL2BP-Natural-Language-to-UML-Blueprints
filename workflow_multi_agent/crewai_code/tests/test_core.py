@@ -58,6 +58,7 @@ def test_config_is_consistent():
     used = {spec["agent"] for spec in tasks.values()}
     assert used == set(agents), f"agents never used: {set(agents) - used}"
     assert len(stage_names()) == 10
+    assert len(stage_names(include_helpers=True)) == 13
     assert "blueprint_guide" in stage_inputs("blueprint_design")
 
 

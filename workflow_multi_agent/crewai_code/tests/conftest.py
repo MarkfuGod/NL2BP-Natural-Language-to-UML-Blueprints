@@ -11,4 +11,10 @@ from agileworkflow.settings import Settings  # noqa: E402
 
 @pytest.fixture
 def settings(tmp_path):
-    return Settings(model="fake/model", output_dir=tmp_path / "out")
+    # External tools off by default; tests that need them patch them in.
+    return Settings(
+        model="fake/model",
+        output_dir=tmp_path / "out",
+        check_diagrams=False,
+        run_tests=False,
+    )

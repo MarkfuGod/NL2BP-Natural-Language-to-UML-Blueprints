@@ -17,6 +17,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Protocol
 
+from agileworkflow import contract, plantuml, quality
 from agileworkflow.crews.agile_crew.agile_crew import StageResult
 from agileworkflow.settings import DEFAULT_LANGUAGE, Settings
 from agileworkflow.single_agent.roles import ROLES, find_role_prompts_dir, load_role_prompt
@@ -67,6 +68,8 @@ class SingleAgentWorkflow:
     outputs: dict[str, str] = field(default_factory=dict)
     usage: dict[str, dict[str, Any]] = field(default_factory=dict)
     log: list[str] = field(default_factory=list)
+    quality: dict[str, Any] = field(default_factory=dict)
+    contract_types: list[str] = field(default_factory=list)
 
     def _describe(self, task: RoleTask) -> str:
         role = ROLES[task.role]
@@ -79,22 +82,106 @@ class SingleAgentWorkflow:
             f"{head}\n项目名称：{self.project_name}\n\n{task.body}\n\n输出语言：{self.language}。"
         )
 
-    def _do(self, task: RoleTask) -> str:
+    def _do(self, task: RoleTask, save: bool = True) -> str:
         print(f"▶ [{task.role}] {task.stage} …", flush=True)
         result = self.runner.run(task, self._describe(task))
         self.outputs[task.stage] = result.text
         if result.usage:
             self.usage[task.stage] = result.usage
-        self.workspace.save_stage(task.stage, result.text)
+        if save:
+            self.workspace.save_stage(task.stage, result.text)
         self.log.append(f"{task.role}:{task.stage}")
         print(f"✔ [{task.role}] {task.stage}", flush=True)
         return result.text
+
+    # -- quality gates (shared with the multi-agent flow) -------------------------
+
+    def _repair_diagrams(self, stage: str) -> None:
+        text = self.outputs[stage]
+        diagrams = plantuml.extract(text, default_prefix=stage)
+        if not diagrams:
+            return
+        if not self.settings.check_diagrams or not quality.plantuml_available():
+            self.quality["diagrams"] = {
+                "status": "skipped",
+                "reason": "disabled"
+                if not self.settings.check_diagrams
+                else "plantuml not on PATH",
+                "total": len(diagrams),
+            }
+            return
+        errors = quality.check_diagrams(diagrams)
+        record = {
+            "status": "checked",
+            "total": len(diagrams),
+            "invalid_first": len(errors),
+            "repair_rounds": 0,
+        }
+        while errors and record["repair_rounds"] < self.settings.max_repair_rounds:
+            record["repair_rounds"] += 1
+            reply = self._do(
+                RoleTask(
+                    f"{stage}_repair_{record['repair_rounds']}",
+                    "blueprintdesign",
+                    "下面的 PlantUML 图无法通过语法检查（行号从 0 开始）：\n\n"
+                    f"{quality.describe_errors(diagrams, errors)}\n\n"
+                    "只修语法错误，保持图名与命名不变。最终答案只包含修复后的图，"
+                    "每张一个 ```plantuml 代码块，首行保留原来的 @startXXX <图名>。",
+                    "修复后的 PlantUML 代码块",
+                ),
+                save=False,
+            )
+            text, _ = quality.replace_diagrams(text, plantuml.extract(reply))
+            diagrams = plantuml.extract(text, default_prefix=stage)
+            errors = quality.check_diagrams(diagrams)
+        record["invalid_final"] = len(errors)
+        record["final_errors"] = [f"{e.name}: {e.message}" for e in errors]
+        self.quality["diagrams"] = record
+        self.outputs[stage] = text
+        self.workspace.save_stage(stage, text)
+
+    def _measure_code(self) -> str:
+        """Conformance + sandboxed tests for code/; returns the signal text for the reviewer."""
+        files = contract.code_files(self.workspace.root, ("code",))
+        conf = contract.check_conformance(self.contract_types, files)
+        self.quality.setdefault("conformance_first", conf.as_dict())
+        self.quality["conformance"] = conf.as_dict()
+        if self.settings.run_tests:
+            tests = quality.run_tests(self.workspace.root / "code")
+        else:
+            tests = {"status": "skipped", "reason": "disabled"}
+        self.quality.setdefault("tests_first", {k: v for k, v in tests.items() if k != "output"})
+        self.quality["tests"] = {k: v for k, v in tests.items() if k != "output"}
+        if tests.get("output"):
+            self.workspace.write("verify/code_tests.log", tests["output"])
+        lines = [
+            f"- 蓝图契约符合度：声明 {len(conf.declared)} 个类型，代码中找到 {len(conf.found)} 个"
+            f"（{conf.ratio}），缺失：{', '.join(conf.missing) or '无'}",
+            f"- 测试（Docker 隔离运行）：{tests['status']}"
+            + (f"，原因：{tests['reason']}" if tests.get("reason") else ""),
+        ]
+        if tests.get("output"):
+            lines.append("- 测试输出末尾：\n```\n" + tests["output"][-1500:] + "\n```")
+        return "\n".join(lines)
+
+    def _gate_failed(self) -> list[str]:
+        """Measured problems that override an APPROVED verdict."""
+        reasons = []
+        ratio = self.quality.get("conformance", {}).get("ratio")
+        if ratio is not None and ratio < self.settings.conformance_threshold:
+            reasons.append(f"conformance {ratio} < {self.settings.conformance_threshold}")
+        if self.quality.get("tests", {}).get("status") == "failed":
+            reasons.append("tests failed")
+        return reasons
+
+    # -- workflow --------------------------------------------------------------
 
     def run(self) -> Path:
         if not self.project_name.strip() or not self.project_description.strip():
             raise ValueError("project_name and project_description are required")
         self.prompts_dir = self.prompts_dir or find_role_prompts_dir()
         self.workspace = Workspace.create(self.settings.output_dir, self.project_name)
+        self.workspace.write("requirements.md", self.project_description + "\n")
         factory = self.runner_factory or (lambda ws, st: CrewRoleRunner(ws, st))
         self.runner = factory(self.workspace, self.settings)
         print(f"\n=== NL2BP 单 Agent 工作流: {self.project_name} → {self.workspace.root} ===\n")
@@ -104,7 +191,8 @@ class SingleAgentWorkflow:
             RoleTask(
                 "01_requirements",
                 "01-req-gen",
-                f"用户的自然语言需求：\n{self.project_description}\n\n输出结构化的需求文档（Markdown）作为最终答案。",
+                f"用户的自然语言需求：\n{self.project_description}\n\n"
+                "输出结构化的需求文档（Markdown）作为最终答案。",
                 "Markdown 需求文档",
             )
         )
@@ -121,33 +209,40 @@ class SingleAgentWorkflow:
                 "03_blueprint",
                 "blueprintdesign",
                 f"需求文档：\n{o['01_requirements']}\n\n架构设计文档：\n{o['02_system_design']}\n\n"
-                "按项目阶段生成 PlantUML 图。每张图放在 ```plantuml 代码块中，首行写 "
-                "@startuml <project>_<diagram_type>_<module>，并在图后写简短说明。"
+                "按项目阶段生成 PlantUML 图（至少包含类图），遵守输出格式规范。"
                 "以包含全部图的 Markdown 文档作为最终答案。",
                 "含 PlantUML 代码块的 Markdown 蓝图文档",
             )
         )
+        self._repair_diagrams("03_blueprint")
+        self.contract_types = contract.declared_types(plantuml.extract(o["03_blueprint"]))
         self._do(
             RoleTask(
                 "04_code",
                 "coder",
                 f"PlantUML 蓝图：\n{o['03_blueprint']}\n\n需求文档：\n{o['01_requirements']}\n\n"
+                f"蓝图类图声明的类型（契约清单，必须用同名类型实现）：\n"
+                f"{contract.checklist(self.contract_types)}\n\n"
                 "严格按蓝图实现可运行代码：用 write_file 逐个写入完整文件，路径以 code/ 开头。"
+                "优先 Python（FastAPI + SQLite）或 Node.js；依赖清单放在 code/requirements.txt 或 "
+                "code/package.json；测试放在 code/tests/（在 code/ 目录下用 `python -m pytest` 或 "
+                "`npm test` 可直接运行），覆盖核心业务规则，不依赖外部服务。"
                 "最终答案是实现说明：已写入的文件列表、运行方式。",
                 "code/ 下的完整代码文件与实现说明",
             )
         )
 
-        verdict, round_no = "CHANGES_REQUESTED", 0
+        verdict, round_no, overridden = "CHANGES_REQUESTED", 0, []
         while True:
-            review_stage = f"05_review_{round_no}"
+            signals = self._measure_code()
             review = self._do(
                 RoleTask(
-                    review_stage,
+                    f"05_review_{round_no}",
                     "code-reviewer",
                     f"PlantUML 蓝图：\n{o['03_blueprint']}\n\n"
                     f"需求文档：\n{o['01_requirements']}\n\n"
                     f"编码说明：\n{o[self._last('04_code')]}\n\n"
+                    f"工作流实测信号（真实测量，结论不得与之矛盾）：\n{signals}\n\n"
                     "用 list_files / read_file 检查 code/ 下的代码，对照蓝图审查。"
                     "最终答案是审查报告，最后一行必须是 "
                     "`VERDICT: APPROVED` 或 `VERDICT: CHANGES_REQUESTED`。",
@@ -155,6 +250,12 @@ class SingleAgentWorkflow:
                 )
             )
             verdict = review_verdict(review)
+            overridden = self._gate_failed() if verdict == "APPROVED" else []
+            if overridden:
+                verdict = "CHANGES_REQUESTED"
+                review += "\n\n[工作流] 实测未通过，审查结论改为 CHANGES_REQUESTED：" + "; ".join(
+                    overridden
+                )
             if verdict == "APPROVED" or round_no >= self.max_fix_rounds:
                 break
             round_no += 1
@@ -162,7 +263,8 @@ class SingleAgentWorkflow:
                 RoleTask(
                     f"06_diagnosis_{round_no}",
                     "code-critic",
-                    f"审查报告：\n{review}\n\nPlantUML 蓝图：\n{o['03_blueprint']}\n\n"
+                    f"审查报告：\n{review}\n\n实测信号：\n{signals}\n\n"
+                    f"PlantUML 蓝图：\n{o['03_blueprint']}\n\n"
                     "用 read_file 定位问题，输出诊断表与给编码工程师的最小修复计划作为最终答案。",
                     "诊断与修复计划",
                 )
@@ -179,12 +281,14 @@ class SingleAgentWorkflow:
                     "修改后的代码文件与修改说明",
                 )
             )
+        final_signals = signals if round_no == 0 or verdict == "APPROVED" else self._measure_code()
 
         self._do(
             RoleTask(
                 "07_deploy",
                 "debugger-deployer",
                 f"架构设计文档：\n{o['02_system_design']}\n\n最终审查结论：{verdict}\n\n"
+                f"实测信号：\n{final_signals}\n\n"
                 "本环境不能执行命令：用 read_file 做静态检查（依赖、入口、配置、导入路径），"
                 "用 write_file 写入部署文件（如 code/Dockerfile、code/DEPLOY.md）。"
                 "最终答案是部署与调试报告：检查结果、发现的问题、用户本地验证的命令。",
@@ -202,7 +306,9 @@ class SingleAgentWorkflow:
                 "model": self.settings.model,
                 "role_sequence": self.log,
                 "final_review_verdict": verdict,
+                "verdict_overridden_by": overridden,
                 "fix_rounds": round_no,
+                "quality": self.quality,
                 "token_usage": self.usage,
                 "finished_at": _dt.datetime.now().isoformat(timespec="seconds"),
             }

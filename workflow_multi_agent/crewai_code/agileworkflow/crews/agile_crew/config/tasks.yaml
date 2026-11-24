@@ -103,6 +103,9 @@ frontend_design_task:
     系统蓝图：
     {blueprint_design}
 
+    蓝图类图声明的类型（契约清单，前端用到的部分必须使用同名类型/组件/模块）：
+    {contract}
+
     作为前端设计实现专家，严格按蓝图实现一个可运行的最小前端：
     1. 用 write_file 工具逐个写入完整文件，路径以 frontend/ 开头（例如 frontend/index.html、frontend/js/app.js）
     2. 文件必须完整可运行，不写省略号或"此处省略"
@@ -121,10 +124,17 @@ backend_design_task:
     系统蓝图：
     {blueprint_design}
 
+    蓝图类图声明的类型（契约清单，后端必须用同名类实现其中的领域模型与服务）：
+    {contract}
+
     作为后端设计实现专家，严格按蓝图实现一个可运行的最小后端：
-    1. 用 write_file 工具逐个写入完整文件，路径以 backend/ 开头（例如 backend/src/app.py、backend/README.md）
-    2. 包含数据模型、服务层、API 路由、依赖清单和至少一个测试
-    3. 接口与蓝图中的接口规范一致，文件完整可运行
+    1. 用 write_file 工具逐个写入完整文件，路径以 backend/ 开头（例如 backend/app/main.py）
+    2. 优先使用 Python（FastAPI + SQLite）或 Node.js；必须写依赖清单
+       （backend/requirements.txt 或 backend/package.json）
+    3. 必须写可在 backend/ 目录下直接运行的测试（Python：backend/tests/test_*.py，
+       用 `python -m pytest` 运行；Node：package.json 的 "test" 脚本），覆盖蓝图中的核心业务规则
+    4. 测试不得依赖外部服务或网络；数据库用 SQLite 或内存存储
+    5. 接口与蓝图中的接口规范一致，文件完整可运行
 
     最终答案是一份后端实现报告（Markdown）：数据模型、API 列表、已写入的文件列表、运行和测试方式。
     输出语言：{language}。
@@ -145,9 +155,12 @@ version_control_task:
     后端实现报告：
     {backend_design}
 
+    本次运行目录的真实 git 历史（由工作流提交，以此为准，不要编造提交）：
+    {git_log}
+
     作为版本控制管理专家，输出版本控制报告：
-    1. 为每个文档和代码模块分配语义化版本号（SemVer）
-    2. 本次迭代的变更记录（CHANGELOG 格式）与建议的提交序列（Conventional Commits）
+    1. 为每个文档和代码模块分配语义化版本号（SemVer），依据上面的真实提交
+    2. 基于真实提交的 CHANGELOG，以及对现有提交信息的改进建议（Conventional Commits）
     3. 分支策略与合并规则
     4. 前后端接口变更的冲突预防措施
 
@@ -169,8 +182,11 @@ agile_dashboard_task:
     后端实现报告：
     {backend_design}
 
+    工作流实测的质量信号（真实测量结果，状态判断必须以此为依据，不得与之矛盾）：
+    {quality_signals}
+
     作为敏捷仪表盘管理专家，对照 Sprint 计划输出项目状态报告：
-    1. 每个用户故事的状态（完成 / 进行中 / 未开始）与依据
+    1. 每个用户故事的状态（完成 / 进行中 / 未开始）与依据；没有通过测试的故事不能标为完成
     2. 关键指标：完成故事点、燃尽情况估计、风险数
     3. 一张看板图（```plantuml 代码块，@startuml … @enduml，用分区表示 To Do / Doing / Done）
     4. 阻碍与风险及建议
@@ -193,8 +209,14 @@ feedback_planning_task:
     项目状态报告：
     {agile_dashboard}
 
-    作为反馈规划专家，输出反馈分析与下一迭代计划：
-    1. 从实现报告和状态报告中识别的问题与缺口（按影响排序）
+    工作流实测的质量信号：
+    {quality_signals}
+
+    人类协作者对蓝图的评审意见：
+    {review_feedback}
+
+    作为反馈规划专家，输出反馈分析与下一迭代计划（只依据上面的真实信号与评审意见，不要虚构用户反馈）：
+    1. 从质量信号、实现报告和状态报告中识别的问题与缺口（按影响排序）
     2. 回顾：做得好的 / 需改进的 / 行动项
     3. 下一迭代的目标与优先级排序的 Backlog
 
@@ -241,3 +263,54 @@ system_design_summary_task:
     输出语言：{language}。直接以 Markdown 文档作为最终答案。
   expected_output: >
     一份 Markdown 系统设计总结，含与蓝图的偏差说明和最终架构 PlantUML 图。
+
+# ---------------------------------------------------------------------------
+# Helper tasks: run by the flow only when a check fails. Not stages of their own.
+
+diagram_repair_task:
+  agent: blueprint_design_agent
+  helper: true
+  description: >
+    下面的 PlantUML 图无法通过 PlantUML 语法检查（行号从 0 开始，对应 @start 行为第 0 行）：
+
+    {broken_diagrams}
+
+    逐一修复这些图，只修语法错误，保持图名、元素命名与含义不变。
+    最终答案只包含修复后的图，每张图一个 ```plantuml 代码块，首行保留原来的 @startXXX <图名>。
+  expected_output: >
+    每张修复后的图一个 ```plantuml 代码块，图名与原图一致。
+
+conformance_fix_task:
+  agent: backend_design_agent
+  helper: true
+  description: >
+    蓝图类图声明了下列类型，但在生成的代码（frontend/、backend/）中找不到：
+    {missing_types}
+
+    系统蓝图：
+    {blueprint_design}
+
+    用 list_files / read_file 查看现有代码，然后用 write_file 补上这些类型
+    （按蓝图中的属性与关系实现，写回完整文件），不要删除或重命名已有的类型。
+    最终答案是修改说明：补了哪些类型、在哪个文件。
+  expected_output: >
+    补齐缺失类型后的代码文件，以及修改说明。
+
+test_fix_task:
+  agent: backend_design_agent
+  helper: true
+  description: >
+    在隔离容器中运行 backend/ 的测试失败了。
+
+    运行命令：{test_command}
+    输出（末尾）：
+    {test_output}
+
+    系统蓝图：
+    {blueprint_design}
+
+    用 list_files / read_file 定位原因，用 write_file 写回修复后的完整文件。
+    修代码而不是删测试或放宽断言；如果确实是测试本身写错，修正测试并在说明中写明理由。
+    依赖缺失就补进 requirements.txt / package.json。最终答案是修复说明。
+  expected_output: >
+    修复后的代码文件与修复说明。

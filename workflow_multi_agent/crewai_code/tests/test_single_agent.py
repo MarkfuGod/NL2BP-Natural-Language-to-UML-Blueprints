@@ -22,28 +22,37 @@ def test_review_verdict_parsing():
 
 
 class ScriptedRoles:
-    def __init__(self, verdicts):
+    def __init__(self, verdicts, workspace=None, write_code=True):
         self.verdicts = list(verdicts)
         self.calls = []
+        self.workspace = workspace
+        self.write_code = write_code
 
     def run(self, task, description):
         self.calls.append((task.role, task.stage, description))
         text = f"# {task.stage}"
         if task.role == "blueprintdesign":
             text += "\n@startuml demo_class_x\nclass X\n@enduml\n"
+        if task.role == "coder" and self.write_code:
+            self.workspace.write("code/models.py", "class X:\n    pass\n")
         if task.role == "code-reviewer":
             text += f"\nVERDICT: {self.verdicts.pop(0)}"
         return StageResult(task.stage, text)
 
 
-def _run(settings, verdicts, rounds=1):
-    roles = ScriptedRoles(verdicts)
+def _run(settings, verdicts, rounds=1, write_code=True):
+    roles = ScriptedRoles(verdicts, write_code=write_code)
+
+    def factory(ws, st):
+        roles.workspace = ws
+        return roles
+
     wf = SingleAgentWorkflow(
         project_name="demo",
         project_description="一个待办清单应用",
         settings=settings,
         max_fix_rounds=rounds,
-        runner_factory=lambda ws, st: roles,
+        runner_factory=factory,
     )
     root = wf.run()
     return wf, roles, root
@@ -89,3 +98,14 @@ def test_fix_loop_is_bounded(settings):
     assert manifest["final_review_verdict"] == "CHANGES_REQUESTED"
     assert manifest["fix_rounds"] == 1
     assert roles.calls[-1][0] == "debugger-deployer"
+
+
+def test_measured_failure_overrides_approved(settings):
+    # coder writes nothing, so class X from the blueprint is missing: conformance 0 < 0.9
+    wf, roles, root = _run(settings, ["APPROVED", "APPROVED"], rounds=1, write_code=False)
+    manifest = json.loads((root / "manifest.json").read_text())
+    assert manifest["verdict_overridden_by"] == ["conformance 0.0 < 0.9"]
+    assert manifest["final_review_verdict"] == "CHANGES_REQUESTED"
+    assert manifest["quality"]["conformance"]["missing"] == ["X"]
+    assert [c[1] for c in roles.calls].count("06_diagnosis_1") == 1
+    assert "实测信号" in roles.calls[4][2]

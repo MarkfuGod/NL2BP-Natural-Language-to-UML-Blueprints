@@ -16,10 +16,15 @@ from agileworkflow.workspace import Workspace
 
 HERE = Path(__file__).parent
 CONFIG_DIR = HERE / "config"
-PROMPTS_DIR = HERE / "prompts"
 
-# Stages that write code files through the write_file tool.
-CODE_STAGES = frozenset({"frontend_design", "backend_design"})
+# Tools per stage; stages not listed get none.
+STAGE_TOOLS: dict[str, tuple[str, ...]] = {
+    "frontend_design": ("write_file",),
+    "backend_design": ("write_file",),
+    "conformance_fix": ("write_file", "read_file", "list_files"),
+    "test_fix": ("write_file", "read_file", "list_files"),
+}
+CODE_STAGES = frozenset(STAGE_TOOLS)
 
 
 @dataclass
@@ -39,8 +44,12 @@ def load_config() -> tuple[dict, dict]:
     return agents, tasks
 
 
-def stage_names() -> list[str]:
-    return [key.removesuffix("_task") for key in load_config()[1]]
+def stage_names(include_helpers: bool = False) -> list[str]:
+    return [
+        key.removesuffix("_task")
+        for key, spec in load_config()[1].items()
+        if include_helpers or not spec.get("helper")
+    ]
 
 
 def stage_inputs(stage: str) -> set[str]:
@@ -64,12 +73,22 @@ class AgileCrew:
 
     @cached_property
     def blueprint_guide(self) -> str:
-        return (PROMPTS_DIR / "blueprint_guide.md").read_text(encoding="utf-8")
+        # Single source shared with the single-agent workflow and the Roo Code mode.
+        from agileworkflow.single_agent.roles import find_role_prompts_dir
+
+        path = find_role_prompts_dir() / "rules-blueprintdesign" / "03-output-contract.md"
+        return path.read_text(encoding="utf-8")
 
     def build(self, stage: str, values: Mapping[str, Any]):
         from crewai import Agent, Task
 
-        from agileworkflow.tools import FileWriterTool
+        from agileworkflow.tools import FileWriterTool, ListFilesTool, ReadFileTool
+
+        table = {
+            "write_file": FileWriterTool,
+            "read_file": ReadFileTool,
+            "list_files": ListFilesTool,
+        }
 
         task_spec = self.tasks_config[f"{stage}_task"]
         agent_key = task_spec["agent"]
@@ -81,7 +100,7 @@ class AgileCrew:
             goal=agent_spec["goal"].strip(),
             backstory=agent_spec["backstory"].strip(),
             llm=self.llm,
-            tools=[FileWriterTool(self.workspace)] if stage in CODE_STAGES else [],
+            tools=[table[name](self.workspace) for name in STAGE_TOOLS.get(stage, ())],
             allow_delegation=False,
             verbose=self.settings.verbose,
             max_iter=40 if stage in CODE_STAGES else 15,
