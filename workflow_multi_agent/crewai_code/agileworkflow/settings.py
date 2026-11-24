@@ -54,6 +54,9 @@ class Settings:
     run_tests: bool = True
     git_history: bool = True
     conformance_threshold: float = 0.9
+    # Per-request timeout and retries: without one, a stalled connection hangs the run forever.
+    llm_timeout: float = 300.0
+    llm_max_retries: int = 2
 
     @classmethod
     def from_env(cls, **overrides) -> Settings:
@@ -75,10 +78,18 @@ class Settings:
             ),
             language=overrides.pop("language", None)
             or os.environ.get("NL2BP_LANGUAGE", DEFAULT_LANGUAGE),
+            llm_timeout=float(
+                overrides.pop("llm_timeout", None) or os.environ.get("NL2BP_LLM_TIMEOUT", 300)
+            ),
             **overrides,
         )
 
     def build_llm(self):
         from crewai import LLM
 
-        return LLM(model=self.model, temperature=self.temperature)
+        return LLM(
+            model=self.model,
+            temperature=self.temperature,
+            timeout=self.llm_timeout,
+            max_retries=self.llm_max_retries,
+        )

@@ -70,3 +70,6 @@ def test_settings_require_model(monkeypatch):
     monkeypatch.setenv("NL2BP_LANGUAGE", "English")
     s = Settings.from_env(temperature=0.5)
     assert (s.model, s.language, s.temperature) == ("deepseek/deepseek-chat", "English", 0.5)
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "test")
+    llm = s.build_llm()
+    assert llm.timeout == 300.0 and llm.max_retries == 2
