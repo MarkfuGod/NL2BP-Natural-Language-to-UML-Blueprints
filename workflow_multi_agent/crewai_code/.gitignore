@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.env
+output/
+Project/
+agile_workflow_logs.txt
+agile_workflow_flow.html
+*.egg-info/
+dist/

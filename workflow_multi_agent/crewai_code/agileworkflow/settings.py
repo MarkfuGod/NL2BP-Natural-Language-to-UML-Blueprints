@@ -1,0 +1,78 @@
+"""Runtime settings: which model to call and where outputs go."""
+
+from __future__ import annotations
+
+import os
+from dataclasses import dataclass, field
+from pathlib import Path
+
+DEFAULT_LANGUAGE = "中文"
+
+# CrewAI sends anonymous telemetry and run traces by default; each call adds
+# seconds of latency and leaves the machine. Off unless the user opts back in.
+_QUIET_ENV = {
+    "CREWAI_DISABLE_TELEMETRY": "true",
+    "CREWAI_TRACING_ENABLED": "false",
+    "OTEL_SDK_DISABLED": "true",
+}
+
+
+def quiet_crewai() -> None:
+    for key, value in _QUIET_ENV.items():
+        os.environ.setdefault(key, value)
+
+
+def load_dotenv(path: Path | None = None) -> None:
+    """Minimal .env loader: KEY=VALUE lines, existing env wins."""
+    path = path or Path.cwd() / ".env"
+    if not path.is_file():
+        return
+    for raw in path.read_text(encoding="utf-8").splitlines():
+        line = raw.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, _, value = line.partition("=")
+        key, value = key.strip(), value.strip().strip('"').strip("'")
+        if key and value:
+            os.environ.setdefault(key, value)
+
+
+class ConfigError(RuntimeError):
+    pass
+
+
+@dataclass
+class Settings:
+    model: str
+    temperature: float = 0.2
+    output_dir: Path = field(default_factory=lambda: Path("output"))
+    language: str = DEFAULT_LANGUAGE
+    verbose: bool = False
+
+    @classmethod
+    def from_env(cls, **overrides) -> Settings:
+        overrides = {k: v for k, v in overrides.items() if v is not None}
+        model = overrides.pop("model", None) or os.environ.get("MODEL", "").strip()
+        if not model:
+            raise ConfigError(
+                "No model configured. Set MODEL (e.g. MODEL=anthropic/claude-sonnet-5-5, "
+                "openai/gpt-5.1, deepseek/deepseek-chat, ollama/qwen3:14b) in the "
+                "environment or .env, or pass --model."
+            )
+        return cls(
+            model=model,
+            temperature=float(
+                overrides.pop("temperature", None) or os.environ.get("NL2BP_TEMPERATURE", 0.2)
+            ),
+            output_dir=Path(
+                overrides.pop("output_dir", None) or os.environ.get("NL2BP_OUTPUT_DIR", "output")
+            ),
+            language=overrides.pop("language", None)
+            or os.environ.get("NL2BP_LANGUAGE", DEFAULT_LANGUAGE),
+            **overrides,
+        )
+
+    def build_llm(self):
+        from crewai import LLM
+
+        return LLM(model=self.model, temperature=self.temperature)

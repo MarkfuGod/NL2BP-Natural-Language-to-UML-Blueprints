@@ -195,21 +195,17 @@ workflow_multi_agent/
 
 CrewAI is a powerful multi-agent collaboration framework specifically designed for building and managing complex AI agent teams. This project uses CrewAI to implement the multi-agent collaborative development workflow.
 
-### Installation and Setup
+### Running this project's implementation
 
-#### 1. Install CrewAI
-
-```bash
-pip install crewai
-```
-
-#### 2. Install from Source (Development Version)
+`crewai_code/` is a runnable implementation (CrewAI 1.x, Python 3.10–3.13):
 
 ```bash
-git clone https://github.com/crewAIInc/crewAI.git
-cd crewAI
-pip install -e .
+cd workflow_multi_agent/crewai_code
+uv sync && cp .env.example .env     # set MODEL and the API key
+uv run nl2bp multi --name LibrarySystem --description "Students borrow and return books" --language English --review
 ```
+
+Stage graph, output layout and configuration: [crewai_code/README_EN.md](crewai_code/README_EN.md). The code below illustrates CrewAI's basic concepts.
 
 ### Quick Start
 

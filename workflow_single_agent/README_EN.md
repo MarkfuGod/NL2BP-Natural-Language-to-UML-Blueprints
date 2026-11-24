@@ -30,6 +30,7 @@ This system includes the following 7 core roles:
 
 ```
 workflow_single_agent/
+├── .roomodes                          # Roo Code custom modes
 ├── README.md                          # This document (Chinese)
 ├── README_EN.md                       # This document (English)
 ├── agent_profile/                     # Agent configuration files
@@ -38,6 +39,7 @@ workflow_single_agent/
 ├── role_prompts/                      # Role prompt rules
 │   ├── rules-01-req-gen/             # Requirements Analyst rules
 │   ├── rules-blueprintdesign/        # Blueprint Designer rules
+│   ├── rules-code-critic/            # Code Critic rules
 │   ├── rules-code-reviewer/          # Code Reviewer rules
 │   ├── rules-coder/                  # Coder rules
 │   ├── rules-debugger-deployer/      # Deployer & Debugger rules
@@ -110,6 +112,22 @@ Supports multiple diagram types:
 - Detailed architecture design documents
 - Complete code review reports
 - Comprehensive deployment test reports
+
+## ▶️ How to run
+
+### Option 1: Roo Code custom modes
+
+The prompts follow Roo Code's `.roo/rules-<mode>/` layout. Copy this folder's `.roomodes` to your project root and `role_prompts/rules-*` to `<project>/.roo/rules-*`; Roo Code then shows the 7 modes. Start with `01-req-gen`.
+
+### Option 2: command line (CrewAI)
+
+```bash
+cd ../workflow_multi_agent/crewai_code
+uv sync && cp .env.example .env    # set MODEL and the API key
+uv run nl2bp single --name TodoApp --description "Multi-user todo list with tags and due dates" --language English
+```
+
+The runner reads `role_prompts/` from this folder and switches roles in order: requirements → architecture → blueprint → code → review. If the review requests changes, `code-critic` diagnoses and `coder` fixes before another review (`--max-fix-rounds`, default 1); `debugger-deployer` then checks the code statically and writes deployment files. Results land in `output/<run>/`.
 
 ## 🚀 Usage Guide
 

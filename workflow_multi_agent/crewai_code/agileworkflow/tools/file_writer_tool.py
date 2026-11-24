@@ -1,47 +1,42 @@
-from typing import Type
-import os
+"""File writer confined to one run's workspace directory."""
+
+from __future__ import annotations
+
 from crewai.tools import BaseTool
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, PrivateAttr
+
+from agileworkflow.workspace import UnsafePathError, Workspace
+
+MAX_BYTES = 512 * 1024
 
 
 class FileWriterToolInput(BaseModel):
-    """写入文件工具的输入模式"""
-    content: str = Field(..., description="要写入文件的内容")
-    file_name: str = Field(..., description="文件名，例如：requirement_1.md")
-    project_id: str = Field(..., description="项目ID，例如：1")
-    project_name: str = Field(..., description="项目名称，例如：电商系统")
+    path: str = Field(
+        ...,
+        description="相对于本次运行目录的文件路径 / path relative to the run directory, "
+        "例如 e.g. frontend/index.html, backend/src/app.py",
+    )
+    content: str = Field(..., description="完整文件内容 / full file content")
 
 
 class FileWriterTool(BaseTool):
-    name: str = "文件写入工具"
+    name: str = "write_file"
     description: str = (
-        "将内容写入到指定的文件中。这个工具可以用来保存需求文档、设计文档等。"
-        "文件将被保存为Project/project_{project_id}_{project_name}/{file_name}。"
+        "把一个完整文件写入本次运行目录（只能写相对路径，不能写到目录之外）。"
+        "Write one complete file inside this run's directory; relative paths only."
     )
-    args_schema: Type[BaseModel] = FileWriterToolInput
+    args_schema: type[BaseModel] = FileWriterToolInput
+    _workspace: Workspace = PrivateAttr()
 
-    def _run(self, content: str, file_name: str, project_id: str, project_name: str) -> str:
-        """
-        将内容写入到指定的文件中
-        
-        参数:
-            content: 要写入的内容
-            file_name: 文件名
-            project_id: 项目ID
-            project_name: 项目名称
-            
-        返回:
-            写入成功的消息
-        """
-        # 创建项目目录
-        project_dir = f"Project/project_{project_id}_{project_name}"
-        os.makedirs(project_dir, exist_ok=True)
-        
-        # 构建文件路径
-        file_path = os.path.join(project_dir, file_name)
-        
-        # 写入文件
-        with open(file_path, "w", encoding="utf-8") as f:
-            f.write(content)
-            
-        return f"内容已成功写入到 {file_path}"
+    def __init__(self, workspace: Workspace, **kwargs):
+        super().__init__(**kwargs)
+        self._workspace = workspace
+
+    def _run(self, path: str, content: str) -> str:
+        if len(content.encode("utf-8")) > MAX_BYTES:
+            return f"拒绝 / refused: {path} 超过 exceeds {MAX_BYTES} bytes"
+        try:
+            target = self._workspace.write(path, content)
+        except UnsafePathError as exc:
+            return f"拒绝 / refused: {exc}"
+        return f"已写入 / wrote {target.relative_to(self._workspace.root)}"
