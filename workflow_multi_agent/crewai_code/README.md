@@ -47,9 +47,9 @@ prepare
             ├─ sprint_planning           敏捷看板 Agent（并行）
             └─ blueprint_design          蓝图设计 Agent（--review：人类协作者评审，可多轮）
                  ├─ frontend_design      前端 Agent ─┐ 并行，write_file 写代码
-                 └─ backend_design       后端 Agent ─┤
-                                                     ├─ version_control     版本控制 Agent
-                                                     └─ agile_dashboard     敏捷看板 Agent
+                 └─ backend_design       后端 Agent ─┴─ verify（契约符合度 + Docker 测试 + 修复）
+                                                          ├─ version_control     版本控制 Agent
+                                                          └─ agile_dashboard     敏捷看板 Agent
                                                           └─ feedback_planning  反馈规划 Agent
                                                                └─ system_design_summary  蓝图设计 Agent
 ```
@@ -57,6 +57,19 @@ prepare
 - 每个阶段只运行一次，是一个“单 Agent + 单任务”的 Crew；只把它需要的上游文档传给它。
 - `--review` 打开人类协作者环节：蓝图生成后暂停，输入修改意见即重新生成，直接回车接受（最多 3 轮）。
 - 文档以 Agent 的最终答案返回，由工作流统一落盘，并自动抽取其中所有 `@startuml … @enduml`（以及 `@startfiles` 等）为 `.puml` 文件。
+
+## 质量闸门（实测，而不是 Agent 自述）
+
+| 闸门 | 做什么 | 失败时 | 依赖 |
+|---|---|---|---|
+| PlantUML 语法检查 | 每个阶段抽出的图都过 `plantuml -syntax` | 把报错和带行号的源码交回蓝图 Agent 修复，最多 2 轮 | `brew install plantuml` |
+| 蓝图契约 | 类图中声明的类/接口/枚举作为清单交给前后端 Agent；`verify` 统计代码中实际出现的比例 | 低于 0.9 时由后端 Agent 补齐一轮 | 无 |
+| 后端测试 | 在一次性 Docker 容器里（代码副本、限内存/CPU/进程数）安装依赖并运行生成的测试 | 把测试输出交回后端 Agent 修复一轮后重跑 | Docker |
+| git 历史 | 运行目录是一个 git 仓库，每个阶段只提交自己的文件 | — | git |
+
+版本控制 Agent 依据真实 `git log` 写报告；敏捷看板与反馈规划 Agent 收到上面的实测信号，未通过测试的故事不能标为完成。单 Agent 工作流使用同样的闸门，实测失败会覆盖审查员的 `APPROVED`。缺少工具时该闸门记为 `skipped` 并写明原因；也可以用 `--no-diagram-check` / `--no-tests` / `--no-git` 关闭。
+
+评估：`uv run python evals/score.py output/<run>` 独立重测 M1（图合法率）、M2（契约符合度）、M3（测试是否通过）。
 
 ## 单 Agent 多角色工作流
 
@@ -79,7 +92,9 @@ docs/<stage>.md        每个阶段的文档
 diagrams/*.puml        从文档中抽取的 PlantUML 图
 frontend/ backend/     多 Agent：前后端代码（write_file 工具写入）
 code/                  单 Agent：代码与部署文件
-manifest.json          输入、模型、阶段耗时、token 用量、评审结论
+verify/                测试日志与 quality.json
+manifest.json          输入、模型、阶段耗时、token 用量、质量信号、提交记录、评审结论
+.git/                  每个阶段一次提交
 ```
 
 `write_file` / `read_file` / `list_files` 工具只能访问本次运行目录，越界路径（`../`、符号链接）会被拒绝。
@@ -94,14 +109,17 @@ agileworkflow/
 ├── templating.py              单次占位符渲染（不触发 CrewAI 对花括号的插值）
 ├── workspace.py               运行目录与路径约束
 ├── plantuml.py                抽取 / 本地或服务器渲染 PlantUML
+├── quality.py                 PlantUML 语法检查、Docker 测试、git 历史
+├── contract.py                类图契约清单与代码符合度
 ├── crews/agile_crew/
 │   ├── agile_crew.py          按阶段构建 Agent + Task 并运行
 │   ├── config/agents.yaml     8 个 Agent 的角色设定
-│   ├── config/tasks.yaml      10 个阶段的任务描述
-│   └── prompts/blueprint_guide.md   蓝图写作规范
+│   └── config/tasks.yaml      10 个阶段 + 3 个修复任务
+│   （蓝图输出规范：workflow_single_agent/role_prompts/rules-blueprintdesign/03-output-contract.md，两种工作流共用）
 ├── single_agent/              单 Agent 多角色运行器
 └── tools/                     受限于运行目录的文件工具
 tests/                         离线测试（假 LLM 驱动真实 CrewAI 对象）
+evals/                         需求样例与独立评分脚本 score.py
 ```
 
 ## 开发

@@ -375,6 +375,7 @@ class AgileWorkflowFlow(Flow[AgileWorkflowState]):
                 "stages": list(s.timings),
                 "timings_s": s.timings,
                 "token_usage": s.usage,
+                "usage_is_per_stage": True,
                 "token_usage_total": usage_total,
                 "quality": self._quality_summary(),
                 "commits": s.commits,

@@ -104,9 +104,13 @@ def detect_test_command(project: Path) -> tuple[str, str] | None:
             if (project / "requirements.txt").is_file()
             else "pip install -q ."
         )
-        return PY_IMAGE, f"{install} && pip install -q pytest httpx && python -m pytest -q 2>&1"
+        quiet = "PIP_ROOT_USER_ACTION=ignore PIP_DISABLE_PIP_VERSION_CHECK=1"
+        return (
+            PY_IMAGE,
+            f"export {quiet}; {install} && pip install -q pytest httpx && python -m pytest -q",
+        )
     if (project / "package.json").is_file():
-        return NODE_IMAGE, "npm install --silent --no-audit --no-fund && npm test 2>&1"
+        return NODE_IMAGE, "npm install --silent --no-audit --no-fund && npm test"
     return None
 
 
@@ -137,10 +141,13 @@ def run_tests(project: Path, timeout: int = 600) -> dict:
             image, "sh", "-c", command,
         ]  # fmt: skip
         try:
-            proc = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+            # stderr merged into stdout so the tail we keep is the test runner's verdict
+            proc = subprocess.run(
+                cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, timeout=timeout
+            )
         except subprocess.TimeoutExpired:
             return {"status": "failed", "reason": f"timed out after {timeout}s", "output": ""}
-    output = (proc.stdout + proc.stderr)[-6000:]
+    output = (proc.stdout or "")[-6000:]
     return {
         "status": "passed" if proc.returncode == 0 else "failed",
         "exit_code": proc.returncode,

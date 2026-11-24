@@ -37,6 +37,9 @@ def _project_args(p: argparse.ArgumentParser) -> None:
     p.add_argument("--output-dir", type=Path, help="输出根目录，默认 output/")
     p.add_argument("--temperature", type=float)
     p.add_argument("-v", "--verbose", action="store_true", help="显示 CrewAI 详细日志")
+    p.add_argument("--no-diagram-check", action="store_true", help="跳过 PlantUML 语法检查与修复")
+    p.add_argument("--no-tests", action="store_true", help="不在 Docker 中运行生成代码的测试")
+    p.add_argument("--no-git", action="store_true", help="不为运行目录建立 git 历史")
 
 
 def _project_inputs(args) -> tuple[str, str]:
@@ -56,6 +59,9 @@ def _settings(args) -> Settings:
             output_dir=args.output_dir,
             temperature=args.temperature,
             verbose=args.verbose or None,
+            check_diagrams=False if args.no_diagram_check else None,
+            run_tests=False if args.no_tests else None,
+            git_history=False if args.no_git else None,
         )
     except ConfigError as exc:
         raise SystemExit(f"error: {exc}") from None

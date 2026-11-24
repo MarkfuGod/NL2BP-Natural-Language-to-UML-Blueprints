@@ -68,10 +68,6 @@ class AgileCrew:
         self.agents_config, self.tasks_config = load_config()
 
     @cached_property
-    def llm(self):
-        return self.settings.build_llm()
-
-    @cached_property
     def blueprint_guide(self) -> str:
         # Single source shared with the single-agent workflow and the Roo Code mode.
         from agileworkflow.single_agent.roles import find_role_prompts_dir
@@ -99,7 +95,9 @@ class AgileCrew:
             role=agent_spec["role"].strip(),
             goal=agent_spec["goal"].strip(),
             backstory=agent_spec["backstory"].strip(),
-            llm=self.llm,
+            # A fresh LLM per stage: CrewAI accumulates token usage on the LLM object,
+            # so a shared one would report running totals (and mix concurrent stages).
+            llm=self.settings.build_llm(),
             tools=[table[name](self.workspace) for name in STAGE_TOOLS.get(stage, ())],
             allow_delegation=False,
             verbose=self.settings.verbose,

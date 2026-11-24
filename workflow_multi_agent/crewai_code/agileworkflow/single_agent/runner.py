@@ -310,6 +310,7 @@ class SingleAgentWorkflow:
                 "fix_rounds": round_no,
                 "quality": self.quality,
                 "token_usage": self.usage,
+                "usage_is_per_stage": True,
                 "finished_at": _dt.datetime.now().isoformat(timespec="seconds"),
             }
         )
@@ -328,7 +329,6 @@ class CrewRoleRunner:
     def __init__(self, workspace: Workspace, settings: Settings):
         self.workspace = workspace
         self.settings = settings
-        self.llm = settings.build_llm()
 
     def _tools(self, names: tuple[str, ...]):
         from agileworkflow.tools import FileWriterTool, ListFilesTool, ReadFileTool
@@ -349,7 +349,7 @@ class CrewRoleRunner:
             goal="按当前角色的规则，把自然语言需求一步步变成 UML 蓝图和可运行代码",
             backstory="你依次扮演需求分析、架构、蓝图、编码、审查、诊断、部署等角色；"
             "每次切换角色后只依据上一个角色留下的文档工作。",
-            llm=self.llm,
+            llm=self.settings.build_llm(),  # fresh per role: usage is accumulated per LLM object
             tools=self._tools(role.tools),
             allow_delegation=False,
             verbose=self.settings.verbose,

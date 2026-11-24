@@ -47,9 +47,9 @@ prepare
             ├─ sprint_planning           Agile Dashboard Agent (concurrent)
             └─ blueprint_design          Blueprint Design Agent (--review: human collaborator, repeatable)
                  ├─ frontend_design      Frontend Agent ─┐ concurrent, writes code with write_file
-                 └─ backend_design       Backend Agent  ─┤
-                                                         ├─ version_control     Version Control Agent
-                                                         └─ agile_dashboard     Agile Dashboard Agent
+                 └─ backend_design       Backend Agent  ─┴─ verify (conformance + Docker tests + fixes)
+                                                              ├─ version_control     Version Control Agent
+                                                              └─ agile_dashboard     Agile Dashboard Agent
                                                               └─ feedback_planning  Feedback Planning Agent
                                                                    └─ system_design_summary  Blueprint Design Agent
 ```
@@ -57,6 +57,19 @@ prepare
 - Each stage runs exactly once, as a one-agent, one-task crew, and receives only the upstream documents it needs.
 - `--review` adds the human collaborator: the flow pauses after the blueprint; type feedback to regenerate, press Enter to accept (up to 3 rounds).
 - Documents come back as each agent's final answer. The flow saves them and extracts every `@startuml … @enduml` (and `@startfiles`, …) block into a `.puml` file.
+
+## Quality gates (measured, not claimed by agents)
+
+| Gate | What it does | On failure | Needs |
+|---|---|---|---|
+| PlantUML syntax | every extracted diagram goes through `plantuml -syntax` | errors plus numbered source go back to the blueprint agent, up to 2 rounds | `brew install plantuml` |
+| Blueprint contract | classes/interfaces/enums declared in the class diagrams become a checklist for the code agents; `verify` measures how many appear in the code | below 0.9, the backend agent adds the missing ones (one round) | — |
+| Backend tests | dependencies installed and generated tests run in a throwaway Docker container (copy of the code, memory/CPU/pids limits) | test output goes back to the backend agent for one fix round, then re-run | Docker |
+| git history | the run directory is a git repo; each stage commits only its own files | — | git |
+
+The version-control agent reports on the real `git log`; the dashboard and feedback agents receive the measured signals, and a story whose tests fail cannot be marked done. The single-agent workflow uses the same gates, and a measured failure overrides the reviewer's `APPROVED`. A gate whose tool is missing is recorded as `skipped` with the reason; `--no-diagram-check` / `--no-tests` / `--no-git` turn gates off.
+
+Evaluation: `uv run python evals/score.py output/<run>` independently re-measures M1 (valid diagrams), M2 (contract conformance), M3 (tests pass).
 
 ## Single-agent workflow
 
@@ -79,7 +92,9 @@ docs/<stage>.md        one document per stage
 diagrams/*.puml        PlantUML diagrams extracted from the documents
 frontend/ backend/     multi-agent: code written through write_file
 code/                  single-agent: code and deployment files
-manifest.json          inputs, model, stage timings, token usage, review verdict
+verify/                test log and quality.json
+manifest.json          inputs, model, stage timings, token usage, quality signals, commits, review verdict
+.git/                  one commit per stage
 ```
 
 `write_file`, `read_file` and `list_files` can only touch the run directory; paths that escape it (`../`, symlinks) are refused.

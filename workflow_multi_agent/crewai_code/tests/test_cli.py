@@ -10,7 +10,9 @@ def test_parser_subcommands():
     )
     assert (a.name, a.description, a.sprint_days, a.review) == ("n", "d", 7, True)
     a = p.parse_args(["single", "--name", "n", "--description", "d", "--max-fix-rounds", "2"])
-    assert a.max_fix_rounds == 2
+    assert a.max_fix_rounds == 2 and not a.no_tests
+    a = p.parse_args(["multi", "--no-tests", "--no-diagram-check", "--no-git"])
+    assert a.no_tests and a.no_diagram_check and a.no_git
     a = p.parse_args(["render", "out", "--format", "png"])
     assert a.format == "png" and a.server is None
 

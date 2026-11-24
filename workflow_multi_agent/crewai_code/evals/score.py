@@ -40,12 +40,15 @@ def score(run: Path, run_tests: bool = True) -> dict:
     manifest = (
         json.loads((run / "manifest.json").read_text()) if (run / "manifest.json").is_file() else {}
     )
-    tokens = manifest.get("token_usage_total") or {}
-    if not tokens:
-        for u in (manifest.get("token_usage") or {}).values():
-            for k, v in u.items():
-                if isinstance(v, int):
-                    tokens[k] = tokens.get(k, 0) + v
+    # Runs before the per-stage-LLM fix recorded running totals per stage, so the
+    # true total there is the largest stage value; newer runs record per-stage deltas.
+    per_stage = list((manifest.get("token_usage") or {}).values())
+    cumulative = manifest.get("usage_is_per_stage") is not True
+    tokens: dict[str, int] = {}
+    for u in per_stage:
+        for k, v in u.items():
+            if isinstance(v, int):
+                tokens[k] = max(tokens.get(k, 0), v) if cumulative else tokens.get(k, 0) + v
     return {
         "run": run.name,
         "M1_diagrams_valid": f"{len(pumls) - len(invalid)}/{len(pumls)}",
