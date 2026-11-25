@@ -1,0 +1,98 @@
+{
+  "concepts": [
+    [
+      "ParkingSpot",
+      "ParkingSpace",
+      "Spot",
+      "Space"
+    ],
+    [
+      "Reservation",
+      "Booking"
+    ],
+    [
+      "Vehicle",
+      "Car"
+    ],
+    [
+      "Visitor",
+      "Guest",
+      "VisitorVehicle"
+    ]
+  ],
+  "rules": [
+    {
+      "id": "one-per-day",
+      "any": [
+        "1\\s*个车位",
+        "one\\s+(spot|reservation)\\s+per\\s+day",
+        "per\\s+day\\s*[:=]?\\s*1\\b",
+        "每天最多\\s*1"
+      ]
+    },
+    {
+      "id": "advance-7d",
+      "any": [
+        "7\\s*天",
+        "7\\s*days?",
+        "days\\s*=\\s*7"
+      ]
+    },
+    {
+      "id": "noshow-30m",
+      "any": [
+        "30\\s*分钟",
+        "30\\s*min",
+        "minutes\\s*=\\s*30"
+      ]
+    },
+    {
+      "id": "ban-3-14",
+      "any": [
+        "3\\s*次",
+        "\\b3\\s*(no-?shows|times)",
+        "14\\s*天",
+        "14\\s*days?"
+      ]
+    }
+  ],
+  "diagrams": [
+    "class",
+    "sequence",
+    "er",
+    "state",
+    "c4"
+  ],
+  "states": [
+    [
+      "RESERVED",
+      "BOOKED",
+      "CONFIRMED",
+      "ACTIVE",
+      "PENDING",
+      "SCHEDULED"
+    ],
+    [
+      "ENTERED",
+      "CHECKED_IN",
+      "PARKED",
+      "IN_USE",
+      "ARRIVED"
+    ],
+    [
+      "CANCELLED",
+      "CANCELED",
+      "EXPIRED",
+      "NO_SHOW",
+      "RELEASED",
+      "CANCELLED_BY_USER",
+      "WITHDRAWN"
+    ]
+  ],
+  "endpoints": [
+    "(GET|POST|PUT|PATCH|DELETE)\\s+`?/\\S*(reservation|booking)",
+    "(GET|POST|PUT|PATCH|DELETE)\\s+`?/\\S*(visitor|guest)",
+    "(GET|POST|PUT|PATCH|DELETE)\\s+`?/\\S*(verify|scan|check|gate)",
+    "GET\\s+`?/\\S*(occupan|report|utili)"
+  ]
+}

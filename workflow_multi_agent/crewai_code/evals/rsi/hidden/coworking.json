@@ -1,0 +1,91 @@
+{
+  "concepts": [
+    [
+      "Member"
+    ],
+    [
+      "Membership",
+      "Plan",
+      "Subscription"
+    ],
+    [
+      "Desk",
+      "Workspace",
+      "Space"
+    ],
+    [
+      "Booking",
+      "Reservation"
+    ],
+    [
+      "Invoice",
+      "Bill"
+    ]
+  ],
+  "rules": [
+    {
+      "id": "pass-10",
+      "any": [
+        "10\\s*次",
+        "\\b10\\s*(visits|uses|times)"
+      ]
+    },
+    {
+      "id": "max-8h",
+      "any": [
+        "8\\s*小时",
+        "8\\s*h(ours?)?\\b",
+        "hours\\s*=\\s*8"
+      ]
+    },
+    {
+      "id": "rate-50",
+      "any": [
+        "\\b50\\b"
+      ]
+    },
+    {
+      "id": "quota-20h",
+      "any": [
+        "20\\s*小时",
+        "20\\s*h"
+      ]
+    }
+  ],
+  "diagrams": [
+    "class",
+    "sequence",
+    "er",
+    "state",
+    "c4"
+  ],
+  "states": [
+    [
+      "ACTIVE"
+    ],
+    [
+      "EXPIRED",
+      "ENDED"
+    ],
+    [
+      "BOOKED",
+      "CONFIRMED",
+      "RESERVED",
+      "ACTIVE",
+      "PENDING",
+      "SCHEDULED"
+    ],
+    [
+      "CANCELLED",
+      "CANCELED",
+      "CANCELLED_BY_USER",
+      "WITHDRAWN"
+    ]
+  ],
+  "endpoints": [
+    "(GET|POST|PUT|PATCH|DELETE)\\s+`?/\\S*(membership|plan|subscription)",
+    "(GET|POST|PUT|PATCH|DELETE)\\s+`?/\\S*(booking|reservation)",
+    "(GET|POST|PUT|PATCH|DELETE)\\s+`?/\\S*(invoice|bill)",
+    "GET\\s+`?/\\S*(desk|space|room|availab)"
+  ]
+}

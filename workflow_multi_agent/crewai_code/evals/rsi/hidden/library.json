@@ -1,0 +1,89 @@
+{
+  "concepts": [
+    [
+      "Book"
+    ],
+    [
+      "Loan",
+      "Borrow",
+      "Borrowing",
+      "LoanRecord",
+      "Lending",
+      "LendingRecord",
+      "BorrowRecord"
+    ],
+    [
+      "Fine",
+      "Penalty",
+      "OverdueFine"
+    ],
+    [
+      "Student",
+      "Member",
+      "Borrower",
+      "User",
+      "Reader"
+    ]
+  ],
+  "rules": [
+    {
+      "id": "limit-5",
+      "any": [
+        "5\\s*本",
+        "\\b5\\s*books?",
+        "(MAX|max)\\w*\\s*[:=]\\s*5\\b",
+        "最多\\s*5",
+        "<=\\s*5|≤\\s*5"
+      ]
+    },
+    {
+      "id": "term-30",
+      "any": [
+        "30\\s*天",
+        "30\\s*days?",
+        "timedelta\\(days\\s*=\\s*30\\)",
+        "=\\s*30\\b"
+      ]
+    },
+    {
+      "id": "fine-0.5",
+      "any": [
+        "0\\.5"
+      ]
+    }
+  ],
+  "diagrams": [
+    "class",
+    "sequence",
+    "er",
+    "state",
+    "c4"
+  ],
+  "states": [
+    [
+      "ACTIVE",
+      "BORROWED",
+      "ONLOAN",
+      "Active",
+      "Borrowed"
+    ],
+    [
+      "RETURNED",
+      "Returned",
+      "CLOSED",
+      "Closed"
+    ],
+    [
+      "OVERDUE",
+      "Overdue",
+      "LATE",
+      "Late"
+    ]
+  ],
+  "endpoints": [
+    "(GET|POST|PUT|PATCH|DELETE)\\s+`?/\\S*(loan|borrow)",
+    "(GET|POST|PUT|PATCH|DELETE)\\s+`?/\\S*(return)",
+    "GET\\s+`?/\\S*(book|catalog|search)",
+    "(GET|POST|PUT|PATCH|DELETE)\\s+`?/\\S*(fine|penalt)"
+  ]
+}

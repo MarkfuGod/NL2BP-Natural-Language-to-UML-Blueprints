@@ -1,0 +1,95 @@
+{
+  "concepts": [
+    [
+      "Event",
+      "Show",
+      "Performance",
+      "Session"
+    ],
+    [
+      "Seat"
+    ],
+    [
+      "Order"
+    ],
+    [
+      "Ticket"
+    ],
+    [
+      "Venue",
+      "SeatMap",
+      "Hall"
+    ]
+  ],
+  "rules": [
+    {
+      "id": "lock-15m",
+      "any": [
+        "15\\s*分钟",
+        "15\\s*min",
+        "minutes\\s*=\\s*15"
+      ]
+    },
+    {
+      "id": "max-4",
+      "any": [
+        "4\\s*张",
+        "\\b4\\s*tickets?",
+        "max\\w*\\s*[:=]\\s*4\\b"
+      ]
+    },
+    {
+      "id": "refund-48h-10",
+      "any": [
+        "48\\s*小时",
+        "48\\s*h",
+        "10\\s*%",
+        "0\\.1\\b"
+      ]
+    }
+  ],
+  "diagrams": [
+    "class",
+    "sequence",
+    "er",
+    "state",
+    "c4"
+  ],
+  "states": [
+    [
+      "LOCKED",
+      "HELD",
+      "PENDING",
+      "PENDING_PAYMENT",
+      "RESERVED"
+    ],
+    [
+      "PAID",
+      "CONFIRMED"
+    ],
+    [
+      "REFUNDED"
+    ],
+    [
+      "USED",
+      "CHECKED_IN",
+      "REDEEMED",
+      "VERIFIED"
+    ],
+    [
+      "RELEASED",
+      "EXPIRED",
+      "CANCELLED",
+      "CANCELED",
+      "CANCELLED_BY_USER",
+      "WITHDRAWN"
+    ]
+  ],
+  "endpoints": [
+    "(GET|POST|PUT|PATCH|DELETE)\\s+`?/\\S*(order)",
+    "(GET|POST|PUT|PATCH|DELETE)\\s+`?/\\S*(pay|payment)",
+    "(GET|POST|PUT|PATCH|DELETE)\\s+`?/\\S*(refund)",
+    "(GET|POST|PUT|PATCH|DELETE)\\s+`?/\\S*(verify|scan|check-?in|redeem)",
+    "GET\\s+`?/\\S*(seat|event|show)"
+  ]
+}
