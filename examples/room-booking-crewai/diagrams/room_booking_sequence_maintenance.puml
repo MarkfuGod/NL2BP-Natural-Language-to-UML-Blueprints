@@ -1,0 +1,42 @@
+@startuml room_booking_sequence_maintenance
+autonumber
+actor Admin
+participant "web (React SPA)" as Web
+participant "api (FastAPI)" as API
+participant "MaintenanceService" as Maint
+participant "BookingRules" as Rules
+participant "UnitOfWork" as UoW
+database "PostgreSQL" as DB
+Admin -> Web : choose room and maintenance interval
+Web -> API : POST /api/v1/admin/rooms/room_id/maintenance
+API -> API : require_admin(principal)
+API -> Maint : create_window(principal, room_id, interval, reason, force, now)
+Maint -> Rules : validate_maintenance(interval, now)
+alt invalid window or outside 30-day window
+  Rules --> Maint : INVALID_MAINTENANCE_WINDOW or BOOKING_WINDOW_EXCEEDED
+  Maint --> API : validation error
+  API --> Web : 400 ErrorResponse
+else valid window
+  Maint -> UoW : rooms.get_for_update(room_id)
+  Maint -> UoW : bookings.list_active_overlapping(room_id, interval)
+  UoW -> DB : SELECT active bookings overlapping
+  DB --> UoW : conflicts
+  alt conflicts exist and force is false
+    Maint --> API : MAINTENANCE_CONFLICT with conflicts
+    API --> Web : 409 MaintenanceConflictResponse
+  else no conflict or force is true
+    Maint -> UoW : maintenance.add(window)
+    opt force is true and conflicts exist
+      loop each conflict
+        Maint -> UoW : bookings.cancel_for_maintenance(conflict_id, now)
+        Maint -> UoW : audits.add(BOOKING_CANCELLED_BY_MAINTENANCE)
+      end
+    end
+    Maint -> UoW : audits.add(MAINTENANCE_CREATED)
+    Maint -> UoW : commit()
+    UoW -> DB : INSERT maintenance, update cancelled bookings, insert audits
+    Maint --> API : window
+    API --> Web : 201 MaintenanceWindowResponse
+  end
+end
+@enduml

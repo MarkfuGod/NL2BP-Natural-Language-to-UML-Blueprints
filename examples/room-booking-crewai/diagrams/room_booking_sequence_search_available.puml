@@ -1,0 +1,27 @@
+@startuml room_booking_sequence_search_available
+autonumber
+actor Employee
+participant "web (React SPA)" as Web
+participant "api (FastAPI)" as API
+participant "BookingService" as BS
+participant "BookingRules" as Rules
+participant "UnitOfWork" as UoW
+database "PostgreSQL" as DB
+Employee -> Web : submit date, start, end, attendees, equipment
+Web -> API : GET /api/v1/rooms/available with query params
+API -> BS : search_available(date, start, end, attendees, equipment, page, size)
+BS -> Rules : validate_search(date, interval)
+alt invalid duration or time granularity
+  Rules --> BS : INVALID_DURATION or INVALID_TIME_GRANULARITY
+  BS --> API : validation error
+  API --> Web : 400 ErrorResponse
+else valid query
+  BS -> UoW : rooms.list_available(date, interval, attendees, equipment, page, size)
+  UoW -> DB : SELECT active rooms with capacity and equipment
+  UoW -> DB : EXCLUDE active bookings and active maintenance overlaps
+  DB --> UoW : rows
+  UoW --> BS : rooms
+  BS --> API : rooms
+  API --> Web : 200 RoomPage ordered by capacity, id
+end
+@enduml

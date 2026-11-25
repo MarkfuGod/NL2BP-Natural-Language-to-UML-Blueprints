@@ -51,6 +51,35 @@ def find_role_prompts_dir(start: Path | None = None) -> Path:
     )
 
 
+def find_skill_dir(start: Path | None = None) -> Path:
+    """Locate the nl2bp skill: $NL2BP_SKILL_DIR, else walk up to skills/nl2bp/."""
+    env = os.environ.get("NL2BP_SKILL_DIR")
+    if env:
+        path = Path(env).expanduser()
+        if not (path / "SKILL.md").is_file():
+            raise FileNotFoundError(f"NL2BP_SKILL_DIR={env} has no SKILL.md")
+        return path
+    here = (start or Path(__file__)).resolve()
+    for parent in [here, *here.parents]:
+        candidate = parent / "skills" / "nl2bp"
+        if (candidate / "SKILL.md").is_file():
+            return candidate
+    raise FileNotFoundError("Could not find skills/nl2bp; set NL2BP_SKILL_DIR.")
+
+
+def load_reference(name: str, skill_dir: Path | None = None) -> str:
+    """One file from the skill's references/ (single source for both workflows)."""
+    return ((skill_dir or find_skill_dir()) / "references" / name).read_text(encoding="utf-8")
+
+
+DIAGRAM_REFERENCES = ("diagram-selection.md", "output-contract.md", "plantuml-syntax.md")
+
+
+def diagram_guide(skill_dir: Path | None = None, contract: bool = True) -> str:
+    names = DIAGRAM_REFERENCES if contract else ("diagram-selection.md", "plantuml-syntax.md")
+    return "\n\n".join(load_reference(n, skill_dir) for n in names)
+
+
 def load_role_prompt(slug: str, prompts_dir: Path | None = None) -> str:
     folder = (prompts_dir or find_role_prompts_dir()) / f"rules-{slug}"
     files = sorted(folder.glob("*.md"))

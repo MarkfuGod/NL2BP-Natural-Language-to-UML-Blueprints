@@ -1,0 +1,28 @@
+@startuml room_booking_sequence_web_flow
+autonumber
+actor Employee
+participant "web (React SPA)" as Web
+participant "api (FastAPI)" as API
+Employee -> Web : fill search form and submit
+Web -> API : GET /api/v1/rooms/available
+API --> Web : 200 RoomPage
+Web --> Employee : render room table
+Employee -> Web : click book on a room
+Web -> API : POST /api/v1/bookings
+alt 201 Created
+  API --> Web : 201 BookingResponse
+  Web -> Web : prepend booking to my bookings list
+  Web --> Employee : show check-in hint with HH:mm
+else 409 ROOM_SLOT_CONFLICT
+  API --> Web : 409 ErrorResponse
+  Web --> Employee : show conflict message and stay on page
+end
+Employee -> Web : click check in
+Web -> API : POST /api/v1/bookings/booking_id/check-in
+API --> Web : 200 BookingResponse
+Web --> Employee : update status to CHECKED_IN
+Employee -> Web : click cancel
+Web -> API : POST /api/v1/bookings/booking_id/cancel
+API --> Web : 200 BookingResponse
+Web --> Employee : remove booking from active list
+@enduml

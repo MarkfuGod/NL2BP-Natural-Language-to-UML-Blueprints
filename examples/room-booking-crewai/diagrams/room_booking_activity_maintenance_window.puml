@@ -1,0 +1,36 @@
+@startuml room_booking_activity_maintenance_window
+|Admin|
+start
+:选择会议室与维护时段 [startAt, endAt);
+|System|
+if (startAt < endAt 且 按15分钟对齐?) then (否)
+  :拒绝 INVALID_MAINTENANCE_WINDOW (400); <<output>>
+  stop
+elseif (startAt 在 [今天, 今天+30天] 内 且 落在 07:00-22:00?) then (否)
+  :拒绝 BOOKING_WINDOW_EXCEEDED (400); <<output>>
+  stop
+else (是)
+  :查询该房间时段内的 RESERVED/CHECKED_IN 预订;
+endif
+if (存在冲突预订?) then (是)
+  |Admin|
+  :看到冲突清单 (预订人 / 时段);
+  :选择"取消冲突并创建" 或 "放弃";
+  |System|
+  if (选择放弃?) then (是)
+    :返回 409 MAINTENANCE_CONFLICT;
+    stop
+  else (否)
+    :冲突预订 status = CANCELLED, cancelReason = MAINTENANCE;
+    :写审计日志 (含操作人与冲突数);
+  endif
+else (否)
+  :无需处理冲突;
+endif
+:插入 maintenance_window (status=ACTIVE);
+:该时段从可预订集合中排除;
+:通知受影响员工 (US-13 启用时);
+|Admin|
+:看到创建成功;
+stop
+@enduml

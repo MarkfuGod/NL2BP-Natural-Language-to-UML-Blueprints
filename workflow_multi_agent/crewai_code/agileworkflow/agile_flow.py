@@ -1,30 +1,25 @@
-"""Multi-agent agile workflow: natural language -> architecture -> UML blueprint -> code.
+"""Multi-agent workflow: natural language -> requirements -> architecture -> UML blueprint -> code.
 
-Stage graph (each stage runs once; frontend/backend and sprint planning run
-concurrently):
+Stage graph (each stage runs once; branches run concurrently):
 
     prepare
-      └─ system_design
-           └─ requirement_analysis
-                ├─ sprint_planning ─────────────────────────────┐
-                └─ blueprint_design (+ optional human review)    │
-                     ├─ frontend_design ─┐                       │
-                     └─ backend_design ──┴─ verify               │
-                                              ├─ version_control │
-                                              └─ agile_dashboard ◄┘
-                                                   └─ feedback_planning
-                                    version_control + feedback_planning
-                                                   └─ system_design_summary ─ finish
+      └─ requirement_analysis
+           ├─ sprint_planning ───────────────────────────────┐
+           └─ system_design                                    │
+                └─ blueprint_design (+ optional human review)  │
+                     ├─ frontend_design ─┐                     │
+                     └─ backend_design ──┴─ verify ────────────┴─ project_status
+                                                                (code) └─ summary ─ finish
 
-Quality gates (real measurements, not agent claims):
-- every stage's PlantUML blocks are syntax-checked; failures go back to the
-  blueprint agent for repair (bounded rounds)
-- the class diagrams' declared types become a checklist for the code stages,
-  and `verify` measures how many reached the code (one fix round if short)
-- `verify` runs backend tests in a Docker sandbox (one fix round on failure)
-- the run directory is a git repo, committed after each stage; the version
-  control agent reports on that real history, and the dashboard/feedback agents
-  get the measured signals instead of inventing status
+Five agents (requirements, architecture, blueprint, frontend, backend). Version control,
+status and feedback come from code: real git history and measured checks.
+
+Quality gates (measured, not claimed):
+- every stage's PlantUML blocks pass `plantuml -syntax` (bounded repair loop)
+- the blueprint's class-diagram types become the code's checklist; `verify` measures how
+  many reached the code (one fix round if below the threshold)
+- `verify` runs the backend tests in a Docker sandbox (one fix round on failure)
+- the run directory is a git repo, one commit per stage
 """
 
 from __future__ import annotations
@@ -40,6 +35,7 @@ from pydantic import BaseModel, Field
 
 from agileworkflow import contract, plantuml, quality
 from agileworkflow.crews.agile_crew.agile_crew import (
+    GUIDE_KEYS,
     AgileCrew,
     StageResult,
     StageRunner,
@@ -122,7 +118,7 @@ class AgileWorkflowFlow(Flow[AgileWorkflowState]):
 
     async def _call(self, stage: str, extra: dict[str, Any] | None = None) -> str:
         values = {**self._values(), **(extra or {})}
-        missing = stage_inputs(stage) - set(values) - {"blueprint_guide"}
+        missing = stage_inputs(stage) - set(values) - GUIDE_KEYS
         if missing:
             raise RuntimeError(f"stage {stage!r} started before its inputs: {sorted(missing)}")
         print(f"▶ {stage} …", flush=True)
@@ -211,26 +207,26 @@ class AgileWorkflowFlow(Flow[AgileWorkflowState]):
         if s.language == DEFAULT_LANGUAGE and settings.language != DEFAULT_LANGUAGE:
             s.language = settings.language
         self.workspace = Workspace.create(settings.output_dir, s.project_name)
-        self.workspace.write("requirements.md", s.project_description + "\n")
+        self.workspace.write("input.md", s.project_description + "\n")
         s.run_dir = str(self.workspace.root)
         factory = self._runner_factory or (lambda ws: AgileCrew(settings, ws))
         self._runner = factory(self.workspace)
         print(f"\n=== NL2BP 多 Agent 工作流: {s.project_name} → {s.run_dir} ===\n")
 
     @listen(prepare)
-    async def system_design(self):
-        await self._commit("chore: requirements", ["requirements.md"])
-        return await self._stage("system_design")
-
-    @listen(system_design)
     async def requirement_analysis(self):
+        await self._commit("chore: input", ["input.md"])
         return await self._stage("requirement_analysis")
+
+    @listen(requirement_analysis)
+    async def system_design(self):
+        return await self._stage("system_design")
 
     @listen(requirement_analysis)
     async def sprint_planning(self):
         self.state.outputs["sprint_plan"] = await self._stage("sprint_planning")
 
-    @listen(requirement_analysis)
+    @listen(system_design)
     async def blueprint_design(self):
         text = await self._stage("blueprint_design")
         rounds = 0
@@ -338,19 +334,40 @@ class AgileWorkflowFlow(Flow[AgileWorkflowState]):
             lines.append("- 测试输出末尾：\n```\n" + tail[-1500:] + "\n```")
         return "\n".join(lines)
 
-    @listen(verify)
-    async def version_control(self):
-        return await self._stage("version_control")
-
     @listen(and_(verify, sprint_planning))
-    async def agile_dashboard(self):
-        return await self._stage("agile_dashboard")
+    async def project_status(self):
+        """Status report built by code from git history and measured checks.
 
-    @listen(agile_dashboard)
-    async def feedback_planning(self):
-        return await self._stage("feedback_planning")
+        Replaces the former version-control, dashboard and feedback agents, which could
+        only restate (or invent) what the flow already measures.
+        """
+        s = self.state
+        stages = ", ".join(f"{k} {v}s" for k, v in s.timings.items())
+        git_log = await asyncio.to_thread(quality.git_log, self.workspace.root)
+        report = "\n".join(
+            [
+                f"# Project status: {s.project_name}",
+                "",
+                "## Measured checks",
+                self._signals_text(),
+                "",
+                "## Stage timings",
+                stages,
+                "",
+                "## Git history of this run",
+                "```",
+                git_log,
+                "```",
+                "",
+                "## Human review",
+                s.review_feedback,
+            ]
+        )
+        s.outputs["project_status"] = report
+        self.workspace.write("docs/project_status.md", report)
+        await self._commit("docs(project_status): measured status", ["docs/project_status.md"])
 
-    @listen(and_(version_control, feedback_planning))
+    @listen(project_status)
     async def system_design_summary(self):
         return await self._stage("system_design_summary")
 

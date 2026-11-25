@@ -5,19 +5,16 @@ from agileworkflow.agile_flow import AgileWorkflowFlow
 from agileworkflow.crews.agile_crew.agile_crew import StageResult, stage_names
 
 EXPECTED_ORDER_CONSTRAINTS = [
-    ("system_design", "requirement_analysis"),
-    ("requirement_analysis", "blueprint_design"),
+    ("requirement_analysis", "system_design"),
     ("requirement_analysis", "sprint_planning"),
+    ("system_design", "blueprint_design"),
     ("blueprint_design", "frontend_design"),
     ("blueprint_design", "backend_design"),
     ("frontend_design", "verify"),
     ("backend_design", "verify"),
-    ("verify", "version_control"),
-    ("verify", "agile_dashboard"),
-    ("sprint_planning", "agile_dashboard"),
-    ("agile_dashboard", "feedback_planning"),
-    ("version_control", "system_design_summary"),
-    ("feedback_planning", "system_design_summary"),
+    ("sprint_planning", "system_design_summary"),
+    ("frontend_design", "system_design_summary"),
+    ("backend_design", "system_design_summary"),
 ]
 
 
@@ -65,12 +62,12 @@ def test_every_stage_runs_once_in_dependency_order(settings):
     flow, run_dir = _kickoff(settings, runner)
 
     assert sorted(runner.started) == sorted(stage_names())
-    assert len(runner.started) == len(set(runner.started)) == 10
+    assert len(runner.started) == len(set(runner.started)) == 7
     for before, after in EXPECTED_ORDER_CONSTRAINTS:
         if "verify" in (before, after):  # verify is flow code, not an LLM stage
             continue
         assert runner.finished.index(before) < runner.started.index(after), (before, after)
-    assert runner.finished.index("backend_design") < runner.started.index("version_control")
+    assert runner.finished.index("backend_design") < runner.started.index("system_design_summary")
     assert runner.max_active >= 2, "frontend/backend should overlap"
 
     root = flow.workspace.root
@@ -82,24 +79,24 @@ def test_every_stage_runs_once_in_dependency_order(settings):
     assert manifest["workflow"] == "multi_agent"
     assert set(manifest["stages"]) == set(stage_names())
     assert manifest["token_usage"]["system_design"] == {"total_tokens": 10}
-    assert manifest["token_usage_total"]["total_tokens"] == 100
+    assert manifest["token_usage_total"]["total_tokens"] == 70
     assert manifest["quality"]["tests"]["status"] == "skipped"
     # real git history of the run directory, one commit per stage plus bookkeeping
-    assert len(manifest["commits"]) == 12  # requirements + 10 stages + verification
-    [vc] = runner.values["version_control"]
-    assert "docs(system_design)" in vc["git_log"]
-    [dash] = runner.values["agile_dashboard"]
-    assert "PlantUML" in dash["quality_signals"]
+    # input + 7 stages + verification + project status
+    assert len(manifest["commits"]) == 10
+    [summary] = runner.values["system_design_summary"]
+    status = summary["project_status"]
+    assert "PlantUML" in status and "docs(system_design)" in status
+    assert (root / "docs" / "project_status.md").is_file()
 
 
 def test_stages_receive_previous_outputs(settings):
     runner = StubRunner()
     _kickoff(settings, runner)
     [summary_values] = runner.values["system_design_summary"]
-    for stage in ["system_design", "blueprint_design", "feedback_planning"]:
+    for stage in ["system_design", "blueprint_design", "backend_design"]:
         assert summary_values[stage].startswith(f"# {stage}")
-    [dash] = runner.values["agile_dashboard"]
-    assert dash["sprint_plan"].startswith("# sprint_planning")
+    assert summary_values["project_status"].startswith("# Project status")
 
 
 def test_human_review_reruns_blueprint_with_feedback(settings):

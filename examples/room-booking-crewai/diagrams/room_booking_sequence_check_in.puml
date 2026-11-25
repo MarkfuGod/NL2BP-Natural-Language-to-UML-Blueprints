@@ -1,0 +1,38 @@
+@startuml room_booking_sequence_check_in
+autonumber
+actor Employee
+participant "web (React SPA)" as Web
+participant "api (FastAPI)" as API
+participant "BookingService" as BS
+participant "UnitOfWork" as UoW
+database "PostgreSQL" as DB
+Employee -> Web : click check in
+Web -> API : POST /api/v1/bookings/booking_id/check-in
+API -> BS : check_in(principal, booking_id, now)
+BS -> UoW : bookings.get_for_update(booking_id)
+UoW -> DB : SELECT booking FOR UPDATE
+DB --> UoW : booking
+UoW --> BS : booking
+alt requester is not owner and not ADMIN
+  BS --> API : FORBIDDEN
+  API --> Web : 403 ErrorResponse
+else status is CHECKED_IN
+  BS --> API : booking with original checkedInAt
+  API --> Web : 200 BookingResponse
+else status is CANCELLED, RELEASED or COMPLETED
+  BS --> API : BOOKING_NOT_ACTIVE
+  API --> Web : 409 ErrorResponse
+else now is before startAt minus 15 minutes
+  BS --> API : CHECKIN_NOT_OPEN
+  API --> Web : 409 ErrorResponse
+else now is after startAt plus 15 minutes
+  BS --> API : BOOKING_NOT_ACTIVE
+  API --> Web : 409 ErrorResponse
+else within check-in window
+  BS -> BS : booking.check_in(now)
+  BS -> UoW : commit()
+  UoW -> DB : UPDATE status CHECKED_IN and checked_in_at
+  BS --> API : booking
+  API --> Web : 200 BookingResponse
+end
+@enduml

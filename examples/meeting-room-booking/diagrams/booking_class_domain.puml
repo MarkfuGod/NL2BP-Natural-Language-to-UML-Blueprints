@@ -1,0 +1,48 @@
+@startuml booking_class_domain
+package domain {
+  class Room {
+    +id: int
+    +name: str
+    +capacity: int
+    +equipment: set[Equipment]
+  }
+  enum Equipment {
+    PROJECTOR
+    VIDEO_CONFERENCE
+    WHITEBOARD
+  }
+  class Booking {
+    +id: int
+    +room_id: int
+    +owner_email: str
+    +start: datetime
+    +end: datetime
+    +status: BookingStatus
+    +overlaps(start: datetime, end: datetime): bool
+  }
+  enum BookingStatus {
+    CONFIRMED
+    CHECKED_IN
+    CANCELLED
+    RELEASED
+    COMPLETED
+  }
+  class MaintenanceWindow {
+    +id: int
+    +room_id: int
+    +start: datetime
+    +end: datetime
+    +reason: str
+  }
+  class BookingPolicy {
+    +MAX_DURATION: timedelta = 4h
+    +MAX_ADVANCE: timedelta = 30d
+    +CHECK_IN_GRACE: timedelta = 15min
+    +validate(start: datetime, end: datetime, now: datetime): None
+  }
+}
+Room "1" -- "*" Booking
+Room "1" -- "*" MaintenanceWindow
+Room --> Equipment
+Booking --> BookingStatus
+@enduml

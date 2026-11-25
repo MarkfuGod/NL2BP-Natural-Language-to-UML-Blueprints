@@ -1,0 +1,27 @@
+@startuml room_booking_sequence_my_bookings
+autonumber
+actor Employee
+participant "web (React SPA)" as Web
+participant "api (FastAPI)" as API
+participant "BookingService" as BS
+participant "BookingRules" as Rules
+participant "UnitOfWork" as UoW
+database "PostgreSQL" as DB
+Employee -> Web : open my bookings
+Web -> API : GET /api/v1/bookings/mine with from, to, status
+API -> BS : list_mine(principal, from_date, to_date, status)
+BS -> Rules : validate_date_range(from_date, to_date)
+alt from_date is after to_date
+  Rules --> BS : INVALID_DATE_RANGE
+  BS --> API : validation error
+  API --> Web : 400 ErrorResponse
+else valid range
+  BS -> UoW : bookings.list_mine(user_id, from_date, to_date, status)
+  UoW -> DB : SELECT own bookings ordered by start_at
+  DB --> UoW : bookings
+  UoW --> BS : bookings
+  BS --> API : bookings
+  API -> API : map checkInDeadline = startAt plus 15 minutes
+  API --> Web : 200 BookingListResponse
+end
+@enduml

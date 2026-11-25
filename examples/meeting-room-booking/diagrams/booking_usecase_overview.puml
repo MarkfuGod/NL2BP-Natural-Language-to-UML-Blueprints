@@ -1,0 +1,27 @@
+@startuml booking_usecase_overview
+left to right direction
+actor Employee as e
+actor Administrator as a
+actor "Company SSO" as sso
+actor Scheduler as clock
+rectangle "Room Booking" {
+  usecase "Search free rooms" as UC1
+  usecase "Book room" as UC2
+  usecase "Check in" as UC3
+  usecase "Cancel booking" as UC4
+  usecase "Manage rooms and maintenance" as UC5
+  usecase "View utilisation report" as UC6
+  usecase "Release no-show bookings" as UC7
+  usecase "Sign in" as UC0
+}
+e --> UC1
+e --> UC2
+e --> UC3
+e --> UC4
+a --> UC5
+a --> UC6
+clock --> UC7
+UC2 ..> UC0 : <<include>>
+UC5 ..> UC0 : <<include>>
+UC0 --> sso
+@enduml

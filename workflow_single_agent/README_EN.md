@@ -115,9 +115,14 @@ Supports multiple diagram types:
 
 ## ▶️ How to run
 
+> **2026 update:** the 7 role rules are now task specs (inputs, output, steps, a "done when" a
+> script can check, next role), without personas or Roo-only tool tables. Diagram selection,
+> the output contract and PlantUML syntax live in [`skills/nl2bp/references/`](../skills/nl2bp/references/);
+> checks run through `nl2bp_check.py`. `<skill>` in the rules means that folder.
+
 ### Option 1: Roo Code custom modes
 
-The prompts follow Roo Code's `.roo/rules-<mode>/` layout. Copy this folder's `.roomodes` to your project root and `role_prompts/rules-*` to `<project>/.roo/rules-*`; Roo Code then shows the 7 modes. Start with `01-req-gen`.
+The prompts follow Roo Code's `.roo/rules-<mode>/` layout. Copy this folder's `.roomodes` to your project root, `role_prompts/rules-*` to `<project>/.roo/rules-*`, and `../skills/nl2bp` to `<project>/skills/nl2bp`; Roo Code then shows the 7 modes. Start with `01-req-gen`.
 
 ### Option 2: command line (CrewAI)
 
@@ -183,7 +188,7 @@ The runner reads `role_prompts/` from this folder and switches roles in order: r
 
 - [Detailed Workflow Documentation](workflow_pic/workflow_EN.md)
 - [Blueprint Designer Configuration](agent_profile/BlueprintWriter_Profile.md)
-- [PlantUML Format Examples](role_prompts/rules-blueprintdesign/02-formatting-examples.md)
+- [PlantUML 1.2026 syntax and examples](../skills/nl2bp/references/plantuml-syntax.md)
 - [Generation Examples](../generation_examples_uml_zh/)
 
 ## 📞 Support & Feedback

@@ -1,0 +1,15 @@
+@startuml room_booking_sequence_notification
+autonumber
+participant "Scheduler" as S
+participant "BookingNotifier" as Notifier
+participant "Notification Channel" as Channel
+participant "application log" as Log
+S -> Notifier : notify_released(booking_id, reason, released_at)
+alt notification channel configured
+  Notifier -> Channel : POST BookingReleased
+  Channel --> Notifier : 2xx response
+else notification channel missing
+  Notifier -> Log : NOTIFY_SKIPPED
+end
+Notifier --> S : done
+@enduml

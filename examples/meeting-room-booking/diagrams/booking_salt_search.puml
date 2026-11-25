@@ -1,0 +1,12 @@
+@startsalt booking_salt_search
+{+
+  {/ <b>Find a room | My bookings | Admin }
+  Date | "2026-12-03" | From | "10:00" | To | "11:30"
+  People | "6" | [X] Projector | [ ] Video conference | [Search]
+  {#
+    Room | Capacity | Equipment | .
+    Aurora | 8 | Projector, VC | [Book]
+    Birch | 6 | Projector | [Book]
+  }
+}
+@endsalt

@@ -1,0 +1,29 @@
+@startuml booking_er_schema
+hide circle
+entity room {
+  * id : INTEGER <<PK>>
+  --
+  * name : TEXT <<unique>>
+  * capacity : INTEGER
+  * equipment : TEXT
+}
+entity booking {
+  * id : INTEGER <<PK>>
+  --
+  * room_id : INTEGER <<FK>>
+  * owner_email : TEXT
+  * start_utc : TEXT
+  * end_utc : TEXT
+  * status : TEXT
+}
+entity maintenance_window {
+  * id : INTEGER <<PK>>
+  --
+  * room_id : INTEGER <<FK>>
+  * start_utc : TEXT
+  * end_utc : TEXT
+  reason : TEXT
+}
+room ||--o{ booking
+room ||--o{ maintenance_window
+@enduml

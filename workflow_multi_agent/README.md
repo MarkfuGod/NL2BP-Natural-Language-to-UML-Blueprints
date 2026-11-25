@@ -1,5 +1,18 @@
 # 多代理协作开发工作流程
 
+> **2026 实现说明（先读这一节）**
+>
+> 下文 “系统架构” 到 “使用指南” 是 2025 年的原始设计：9 个 Agent 模拟一个敏捷团队。
+> 当前 [`crewai_code/`](crewai_code/) 的实现按实测结果做了精简：
+>
+> - **5 个 Agent**：需求分析 → 架构（C4）→ 蓝图 → 前端 ∥ 后端。
+> - **版本控制 / 敏捷看板 / 反馈规划不再是 Agent**：由代码直接产生。运行目录是真实的 git 仓库，
+>   每个阶段一次提交；`project_status.md` 汇总真实提交记录与实测质量信号；人类协作者（$H$）通过
+>   `--review` 评审蓝图。原因：这三个 Agent 拿不到真实信号，只能复述或编造状态；而实测的提升全部来自
+>   确定性检查（[evals/RESULTS.md](crewai_code/evals/RESULTS.md)）。
+> - **质量闸门**：PlantUML 语法检查与修复、蓝图契约符合度、Docker 中运行生成的测试。
+> - 选图规则、输出契约与 PlantUML 语法统一放在 [`skills/nl2bp/references/`](../skills/nl2bp/references/)。
+
 ## 📋 概述
 
 本目录包含了一个基于多代理协作的敏捷软件开发工作流程系统。该系统通过多个专业化Agent之间的消息交换和协作，实现从用户需求到产品交付的完整开发生命周期，并构建了持续演进的敏捷开发闭环。
@@ -188,136 +201,15 @@ workflow_multi_agent/
 - 通过 $A_{vc}$ 管理版本历史
 - 通过 $A_{fp}$ 分析反馈和规划迭代
 
-## 🤖 CrewAI 实现指南
+## 🤖 CrewAI 实现
 
-### 关于 CrewAI
-
-CrewAI 是一个强大的多代理协作框架，专门用于构建和管理复杂的AI代理团队。本项目使用 CrewAI 来实现多代理协作开发工作流程。
-
-### 运行本项目的实现
-
-`crewai_code/` 是可直接运行的实现（CrewAI 1.x，Python 3.10–3.13）：
+运行方式、阶段图、质量闸门与输出目录见 [crewai_code/README.md](crewai_code/README.md)：
 
 ```bash
 cd workflow_multi_agent/crewai_code
 uv sync && cp .env.example .env     # 填 MODEL 与 API key
-uv run nl2bp multi --name 图书馆系统 --description "学生借还图书，管理员管理图书" --review
+uv run nl2bp multi --name 会议室预订 --description-file evals/requirements/room-booking.md --review
 ```
-
-阶段图、输出目录与配置见 [crewai_code/README.md](crewai_code/README.md)。下文是 CrewAI 基本概念的示意代码。
-
-### 快速开始
-
-#### 基本概念
-
-- **Agent（代理）**: 具有特定角色和技能的AI实体
-- **Task（任务）**: 需要完成的具体工作
-- **Crew（团队）**: 多个代理组成的协作团队
-- **Process（流程）**: 任务执行的顺序和方式
-
-#### 创建代理示例
-
-```python
-from crewai import Agent, Task, Crew
-
-# 创建需求分析代理
-requirements_agent = Agent(
-    role='Requirements Analyst',
-    goal='分析和细化用户需求，创建优先级排序的需求列表',
-    backstory='你是一位经验丰富的需求分析师，擅长将模糊的用户需求转化为清晰的功能规格。',
-    verbose=True
-)
-
-# 创建系统设计代理
-system_design_agent = Agent(
-    role='System Architect',
-    goal='设计系统架构和技术方案',
-    backstory='你是一位资深的系统架构师，能够设计可扩展和可维护的系统架构。',
-    verbose=True
-)
-```
-
-#### 定义任务
-
-```python
-# 需求分析任务
-requirements_task = Task(
-    description='分析用户需求并生成结构化的需求文档',
-    agent=requirements_agent
-)
-
-# 系统设计任务
-design_task = Task(
-    description='基于需求文档设计系统架构',
-    agent=system_design_agent
-)
-```
-
-#### 创建团队
-
-```python
-# 创建开发团队
-dev_crew = Crew(
-    agents=[requirements_agent, system_design_agent],
-    tasks=[requirements_task, design_task],
-    verbose=2
-)
-
-# 执行工作流程
-result = dev_crew.kickoff()
-```
-
-### 高级功能
-
-#### 1. 自定义工具集成
-
-```python
-from crewai_tools import SerperDevTool, WebsiteSearchTool
-
-# 为代理添加工具
-search_tool = SerperDevTool()
-web_tool = WebsiteSearchTool()
-
-agent_with_tools = Agent(
-    role='Research Specialist',
-    tools=[search_tool, web_tool],
-    # ... 其他配置
-)
-```
-
-#### 2. 内存和上下文管理
-
-```python
-crew = Crew(
-    agents=[agent1, agent2],
-    tasks=[task1, task2],
-    memory=True,  # 启用团队记忆
-    verbose=2
-)
-```
-
-#### 3. 协作流程控制
-
-```python
-from crewai import Process
-
-crew = Crew(
-    agents=[agent1, agent2, agent3],
-    tasks=[task1, task2, task3],
-    process=Process.sequential,  # 或 Process.hierarchical
-    verbose=2
-)
-```
-
-### 项目集成
-
-本项目的 `crewai_code/` 目录包含了完整的 CrewAI 实现代码，展示了如何将上述9个Agent集成到一个协作系统中。
-
-### 学习资源
-
-- **官方文档**: [https://docs.crewai.com/introduction](https://docs.crewai.com/introduction)
-- **GitHub仓库**: [https://github.com/crewAIInc/crewAI](https://github.com/crewAIInc/crewAI)
-- **示例项目**: [CrewAI Examples](https://github.com/crewAIInc/crewAI-examples)
 
 ## 🔗 相关资源
 

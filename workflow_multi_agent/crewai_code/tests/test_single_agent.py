@@ -10,7 +10,11 @@ def test_every_role_has_a_prompt_folder():
     for slug in ROLES:
         assert load_role_prompt(slug, prompts).strip(), slug
     assert "02-formatting" not in load_role_prompt("coder", prompts)
-    assert "@startuml" in load_role_prompt("blueprintdesign", prompts)
+    assert "output-contract.md" in load_role_prompt("blueprintdesign", prompts)
+    # no personas or Roo-only tool tables left in the role rules
+    for slug in ROLES:
+        text = load_role_prompt(slug, prompts)
+        assert "You are" not in text and "switch_mode" not in text, slug
 
 
 def test_review_verdict_parsing():
@@ -69,7 +73,8 @@ def test_linear_path_when_review_approves(settings):
         "debugger-deployer",
     ]
     desc = roles.calls[2][2]
-    assert "Blueprint Writer Role" in desc and "01_requirements" in desc
+    assert "Role: blueprint" in desc and "# 01_requirements" in desc
+    assert "PlantUML syntax reference" in desc  # skill reference inlined
     assert (root / "diagrams" / "demo_class_x.puml").is_file()
     manifest = json.loads((root / "manifest.json").read_text())
     assert manifest["final_review_verdict"] == "APPROVED" and manifest["fix_rounds"] == 0

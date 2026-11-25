@@ -1,0 +1,13 @@
+@startuml room_booking_state_booking
+hide empty description
+[*] --> RESERVED : create booking
+RESERVED --> CHECKED_IN : check in within window
+RESERVED --> RELEASED : auto release after startAt plus 15 minutes without check-in
+RESERVED --> CANCELLED : owner cancels before startAt
+RESERVED --> CANCELLED : force maintenance
+RESERVED --> COMPLETED : endAt reached
+CHECKED_IN --> COMPLETED : endAt reached
+RELEASED --> [*]
+CANCELLED --> [*]
+COMPLETED --> [*]
+@enduml

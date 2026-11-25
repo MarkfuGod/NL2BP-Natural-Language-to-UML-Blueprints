@@ -1,0 +1,38 @@
+@startuml room_booking_usecase_overview
+left to right direction
+actor "员工\nEmployee" as Employee
+actor "行政管理员\nAdmin" as Admin
+actor "公司账号服务\nSSO" as SSO <<system>>
+actor "定时任务\nScheduler" as Scheduler <<system>>
+
+rectangle "会议室预订系统" {
+  usecase "UC-1 登录公司账号" as UC1
+  usecase "UC-2 搜索空闲会议室" as UC2
+  usecase "UC-3 创建预订" as UC3
+  usecase "UC-4 签到" as UC4
+  usecase "UC-5 取消预订" as UC5
+  usecase "UC-6 查看我的预订" as UC6
+  usecase "UC-7 自动释放未签到预订" as UC7
+  usecase "UC-8 管理会议室" as UC8
+  usecase "UC-9 设置维护时段" as UC9
+  usecase "UC-10 查看使用率报表" as UC10
+  usecase "UC-11 校验时段冲突与限额" as UC11
+}
+
+Employee --> UC1
+Employee --> UC2
+Employee --> UC3
+Employee --> UC4
+Employee --> UC5
+Employee --> UC6
+Admin --> UC1
+Admin --> UC8
+Admin --> UC9
+Admin --> UC10
+Scheduler --> UC7
+
+UC1 ..> SSO : <<include>>
+UC3 ..> UC11 : <<include>>
+UC9 ..> UC11 : <<include>>
+UC3 ..> UC2 : <<include>>
+@enduml

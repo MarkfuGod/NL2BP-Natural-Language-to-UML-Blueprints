@@ -1,0 +1,69 @@
+@startuml room_booking_sequence_admin_rooms
+autonumber
+actor Admin
+participant "web (React SPA)" as Web
+participant "api (FastAPI)" as API
+participant "RoomAdminService" as RoomAdmin
+participant "BookingRules" as Rules
+participant "UnitOfWork" as UoW
+database "PostgreSQL" as DB
+Admin -> Web : open /admin rooms
+Web -> API : POST /api/v1/admin/rooms
+API -> API : require_admin(principal)
+API -> RoomAdmin : create_room(principal, name, floor, capacity, equipment)
+RoomAdmin -> Rules : validate_room(name, floor, capacity)
+alt invalid capacity or field
+  Rules --> RoomAdmin : INVALID_CAPACITY or invalid field
+  RoomAdmin --> API : validation error
+  API --> Web : 400 ErrorResponse
+else valid
+  RoomAdmin -> UoW : rooms.find_by_name(name)
+  UoW -> DB : SELECT room by name
+  DB --> UoW : room or None
+  alt duplicate name
+    RoomAdmin --> API : ROOM_NAME_DUPLICATED
+    API --> Web : 409 ErrorResponse
+  else name unique
+    RoomAdmin -> UoW : rooms.add(room)
+    RoomAdmin -> UoW : audits.add(ROOM_CREATED)
+    RoomAdmin -> UoW : commit()
+    UoW -> DB : INSERT room and audit
+    RoomAdmin --> API : room
+    API --> Web : 201 RoomResponse
+  end
+end
+group PATCH /api/v1/admin/rooms/room_id
+  Web -> API : PATCH /api/v1/admin/rooms/room_id
+  API -> RoomAdmin : update_room(principal, room_id, name, floor, capacity, equipment)
+  RoomAdmin -> Rules : validate_room(name, floor, capacity)
+  RoomAdmin -> UoW : rooms.get(room_id)
+  UoW -> DB : SELECT room
+  DB --> UoW : room
+  alt duplicate new name
+    RoomAdmin --> API : ROOM_NAME_DUPLICATED
+    API --> Web : 409 ErrorResponse
+  else valid update
+    RoomAdmin -> UoW : rooms.save(room)
+    RoomAdmin -> UoW : audits.add(ROOM_UPDATED)
+    RoomAdmin -> UoW : commit()
+    API --> Web : 200 RoomResponse
+  end
+end
+group DELETE /api/v1/admin/rooms/room_id
+  Web -> API : DELETE /api/v1/admin/rooms/room_id
+  API -> RoomAdmin : delete_room(principal, room_id, now)
+  RoomAdmin -> UoW : rooms.has_future_active_bookings(room_id, now)
+  UoW -> DB : SELECT future active bookings
+  DB --> UoW : exists
+  alt future bookings exist
+    RoomAdmin -> UoW : rooms.list_future_active_bookings(room_id, now)
+    RoomAdmin --> API : ROOM_HAS_FUTURE_BOOKINGS with conflicts
+    API --> Web : 409 ErrorResponse
+  else no future bookings
+    RoomAdmin -> UoW : rooms.save(status DELETED)
+    RoomAdmin -> UoW : audits.add(ROOM_DELETED)
+    RoomAdmin -> UoW : commit()
+    API --> Web : 204 No Content
+  end
+end
+@enduml

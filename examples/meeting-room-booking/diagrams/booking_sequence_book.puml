@@ -1,0 +1,26 @@
+@startuml booking_sequence_book
+autonumber
+actor Employee
+participant "Web pages" as Web
+participant "Booking API" as API
+participant BookingService as Svc
+database SQLite as DB
+
+Employee -> Web : pick room and slot
+Web -> API ++ : POST /bookings {room_id, start, end}
+API -> Svc ++ : book(owner, room_id, start, end)
+Svc -> Svc : BookingPolicy.validate (BR-2)
+Svc -> DB ++ : BEGIN IMMEDIATE; find_conflicts (BR-1)
+return conflicts
+alt no conflict
+  Svc -> DB : INSERT booking CONFIRMED; COMMIT
+  Svc --> API : Booking
+  API --> Web : 201 Created
+else conflict
+  Svc --> API : ConflictError
+  API --> Web : 409 Conflict {conflicting_booking_id}
+end
+deactivate Svc
+deactivate API
+Web --> Employee : show result
+@enduml

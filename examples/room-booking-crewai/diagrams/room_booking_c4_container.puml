@@ -1,0 +1,22 @@
+@startuml room_booking_c4_container
+!include <C4/C4_Container>
+title 会议室预订系统 — C4 Container
+
+Person(employee, "员工 Employee")
+Person(admin, "行政管理员 Admin")
+System_Ext(sso, "公司账号服务 SSO", "OIDC / JWKS")
+
+System_Boundary(sys, "会议室预订系统") {
+  Container(web, "web", "TypeScript + React + Vite（静态构建，由 api 同源托管）", "搜索页、我的预订、签到/取消、/admin 三个入口（房间管理 / 维护时段 / 使用率报表）")
+  Container(api, "api", "Python 3.12 + FastAPI + Uvicorn", "REST /api/v1：鉴权、BR-1~BR-24 校验、冲突判定、报表聚合、审计")
+  Container(scheduler, "scheduler", "Python 3.12（app/scheduler.py 独立入口）", "每 60 秒：释放未签到预订、关闭已结束预订、清理过期审计")
+  ContainerDb(db, "db", "PostgreSQL 14+", "rooms / bookings / maintenance_windows / audit_logs；btree_gist 排除约束")
+}
+
+Rel(employee, web, "浏览", "HTTPS")
+Rel(admin, web, "浏览", "HTTPS")
+Rel(web, api, "调用 /api/v1", "JSON / HTTPS")
+Rel(api, sso, "校验 JWT 签名与 roles", "HTTPS / JWKS")
+Rel(api, db, "事务读写、SELECT FOR UPDATE、静态文件也在本机", "SQL / TCP")
+Rel(scheduler, db, "条件更新状态、pg_try_advisory_lock 单活", "SQL / TCP")
+@enduml

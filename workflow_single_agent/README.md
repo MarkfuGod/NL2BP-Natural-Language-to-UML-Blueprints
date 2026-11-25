@@ -114,9 +114,13 @@ workflow_single_agent/
 
 ## ▶️ 运行方式
 
+> **2026 更新：** 7 个角色规则已改写为任务规格（输入、输出、步骤、可由脚本检查的“完成条件”、下一角色），
+> 去掉了人设与 Roo 专用工具表。选图指南、输出契约和 PlantUML 语法统一放在
+> [`skills/nl2bp/references/`](../skills/nl2bp/references/)，检查由 `nl2bp_check.py` 完成；规则中的 `<skill>` 指这个目录。
+
 ### 方式一：Roo Code 自定义模式
 
-这些提示词按 Roo Code 的 `.roo/rules-<模式>/` 约定组织。把本目录的 `.roomodes` 复制到你的项目根目录，把 `role_prompts/rules-*` 复制为 `<项目>/.roo/rules-*`，Roo Code 中即出现 7 个模式，从 `01-req-gen` 开始。
+这些提示词按 Roo Code 的 `.roo/rules-<模式>/` 约定组织。把本目录的 `.roomodes` 复制到你的项目根目录，把 `role_prompts/rules-*` 复制为 `<项目>/.roo/rules-*`，再把 `../skills/nl2bp` 复制为 `<项目>/skills/nl2bp`。Roo Code 中即出现 7 个模式，从 `01-req-gen` 开始。
 
 ### 方式二：命令行（CrewAI）
 
@@ -182,7 +186,7 @@ uv run nl2bp single --name 待办清单 --description "多用户待办清单，�
 
 - [工作流程详细说明](workflow_pic/workflow_ZH.md)
 - [蓝图设计师配置](agent_profile/BlueprintWriter_Profile.md)
-- [PlantUML格式示例](role_prompts/rules-blueprintdesign/02-formatting-examples.md)
+- [PlantUML 1.2026 语法与示例](../skills/nl2bp/references/plantuml-syntax.md)
 - [生成示例](../generation_examples_uml_zh/)
 
 ## 📞 支持与反馈

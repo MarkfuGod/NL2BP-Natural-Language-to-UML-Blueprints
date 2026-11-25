@@ -1,0 +1,10 @@
+@startjson booking_json_booking
+{
+  "id": 812,
+  "room_id": 4,
+  "owner_email": "li.wei@example.com",
+  "start": "2026-12-03T02:00:00Z",
+  "end": "2026-12-03T03:30:00Z",
+  "status": "CONFIRMED"
+}
+@endjson

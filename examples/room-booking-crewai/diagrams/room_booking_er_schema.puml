@@ -1,0 +1,54 @@
+@startuml room_booking_er_schema
+hide circle
+entity rooms {
+  * id : UUID <<PK>>
+  --
+  * name : VARCHAR(50) <<unique>>
+  * floor : VARCHAR(20)
+  * capacity : INTEGER
+  * equipment : equipment[]
+  * status : room_status
+  * created_at : TIMESTAMPTZ
+  * updated_at : TIMESTAMPTZ
+}
+entity bookings {
+  * id : UUID <<PK>>
+  --
+  * room_id : UUID <<FK>>
+  * booked_by : VARCHAR(255)
+  * start_at : TIMESTAMPTZ
+  * end_at : TIMESTAMPTZ
+  * attendees : INTEGER
+  * title : VARCHAR(200)
+  * status : booking_status
+  checked_in_at : TIMESTAMPTZ
+  cancel_reason : cancel_reason
+  released_at : TIMESTAMPTZ
+  * created_at : TIMESTAMPTZ
+  * updated_at : TIMESTAMPTZ
+}
+entity maintenance_windows {
+  * id : UUID <<PK>>
+  --
+  * room_id : UUID <<FK>>
+  * start_at : TIMESTAMPTZ
+  * end_at : TIMESTAMPTZ
+  * reason : VARCHAR(255)
+  * status : maintenance_status
+  * created_by : VARCHAR(255)
+  * created_at : TIMESTAMPTZ
+}
+entity audit_logs {
+  * id : UUID <<PK>>
+  --
+  * actor_id : VARCHAR(255)
+  * action : audit_action
+  * entity_type : audit_entity_type
+  * entity_id : UUID
+  before_state : JSONB
+  after_state : JSONB
+  * created_at : TIMESTAMPTZ
+}
+rooms ||--o{ bookings : has
+rooms ||--o{ maintenance_windows : has
+@enduml

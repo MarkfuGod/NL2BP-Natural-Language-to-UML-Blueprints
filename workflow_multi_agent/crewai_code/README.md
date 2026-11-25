@@ -42,21 +42,21 @@ uv run nl2bp render output/<run>/diagrams
 
 ```
 prepare
-  └─ system_design                       系统架构设计 Agent
-       └─ requirement_analysis           需求分析 Agent
-            ├─ sprint_planning           敏捷看板 Agent（并行）
-            └─ blueprint_design          蓝图设计 Agent（--review：人类协作者评审，可多轮）
-                 ├─ frontend_design      前端 Agent ─┐ 并行，write_file 写代码
-                 └─ backend_design       后端 Agent ─┴─ verify（契约符合度 + Docker 测试 + 修复）
-                                                          ├─ version_control     版本控制 Agent
-                                                          └─ agile_dashboard     敏捷看板 Agent
-                                                          └─ feedback_planning  反馈规划 Agent
-                                                               └─ system_design_summary  蓝图设计 Agent
+  └─ requirement_analysis               需求分析 Agent（用户故事、业务规则、用例图、活动图）
+       ├─ sprint_planning               需求分析 Agent（并行：Backlog + 甘特图）
+       └─ system_design                 架构 Agent（ADR + C4 Context / Container）
+            └─ blueprint_design         蓝图 Agent（类图契约、时序、ER、状态；--review 人类评审）
+                 ├─ frontend_design     前端 Agent ─┐ 并行，write_file 写代码
+                 └─ backend_design      后端 Agent ─┴─ verify（契约符合度 + Docker 测试 + 修复）
+                                                         └─ project_status（代码生成：git 历史 + 实测信号）
+                                                              └─ system_design_summary  蓝图 Agent
 ```
 
+- 5 个 Agent，按交付物与规则定义（没有人设 backstory）；版本控制、看板、反馈由代码基于真实数据生成。
 - 每个阶段只运行一次，是一个“单 Agent + 单任务”的 Crew；只把它需要的上游文档传给它。
+- 选图指南、输出契约、PlantUML 1.2026 语法直接取自 [`skills/nl2bp/references/`](../../skills/nl2bp/references/)，与 skill 和 Roo Code 模式共用一份。
 - `--review` 打开人类协作者环节：蓝图生成后暂停，输入修改意见即重新生成，直接回车接受（最多 3 轮）。
-- 文档以 Agent 的最终答案返回，由工作流统一落盘，并自动抽取其中所有 `@startuml … @enduml`（以及 `@startfiles` 等）为 `.puml` 文件。
+- 文档以 Agent 的最终答案返回，由工作流统一落盘，并抽取所有 `@startX … @endX` 为 `.puml` 文件。
 
 ## 质量闸门（实测，而不是 Agent 自述）
 
@@ -67,7 +67,7 @@ prepare
 | 后端测试 | 在一次性 Docker 容器里（代码副本、限内存/CPU/进程数）安装依赖并运行生成的测试 | 把测试输出交回后端 Agent 修复一轮后重跑 | Docker |
 | git 历史 | 运行目录是一个 git 仓库，每个阶段只提交自己的文件 | — | git |
 
-版本控制 Agent 依据真实 `git log` 写报告；敏捷看板与反馈规划 Agent 收到上面的实测信号，未通过测试的故事不能标为完成。单 Agent 工作流使用同样的闸门，实测失败会覆盖审查员的 `APPROVED`。缺少工具时该闸门记为 `skipped` 并写明原因；也可以用 `--no-diagram-check` / `--no-tests` / `--no-git` 关闭。
+`project_status.md` 由代码汇总真实 `git log` 与上面的实测信号，交给最终总结阶段作为事实。单 Agent 工作流使用同样的闸门，实测失败会覆盖审查员的 `APPROVED`。缺少工具时该闸门记为 `skipped` 并写明原因；也可以用 `--no-diagram-check` / `--no-tests` / `--no-git` 关闭。
 
 评估：`uv run python evals/score.py output/<run>` 独立重测 M1（图合法率）、M2（契约符合度）、M3（测试是否通过）。
 
@@ -113,9 +113,9 @@ agileworkflow/
 ├── contract.py                类图契约清单与代码符合度
 ├── crews/agile_crew/
 │   ├── agile_crew.py          按阶段构建 Agent + Task 并运行
-│   ├── config/agents.yaml     8 个 Agent 的角色设定
-│   └── config/tasks.yaml      10 个阶段 + 3 个修复任务
-│   （蓝图输出规范：workflow_single_agent/role_prompts/rules-blueprintdesign/03-output-contract.md，两种工作流共用）
+│   ├── config/agents.yaml     5 个 Agent：交付物 + 规则
+│   └── config/tasks.yaml      7 个阶段 + 3 个修复任务
+│   （选图指南、输出契约、PlantUML 语法：skills/nl2bp/references/，三种用法共用）
 ├── single_agent/              单 Agent 多角色运行器
 └── tools/                     受限于运行目录的文件工具
 tests/                         离线测试（假 LLM 驱动真实 CrewAI 对象）
@@ -131,7 +131,7 @@ uv run ruff check . && uv run ruff format --check .
 uv run nl2bp plot             # 导出 Flow 结构图 agile_workflow_flow.html
 ```
 
-扩展：在 `agents.yaml` / `tasks.yaml` 中新增条目，然后在 `agile_flow.py` 中加一个 `@listen(...)` 方法调用 `self._stage("<stage>")`。`tests/test_core.py::test_config_is_consistent` 会检查配置引用是否一致。
+扩展：在 `agents.yaml` / `tasks.yaml` 中新增条目（先问：这一步能不能由代码确定性地完成？能就别加 Agent），然后在 `agile_flow.py` 中加一个 `@listen(...)` 方法调用 `self._stage("<stage>")`。`tests/test_core.py::test_config_is_consistent` 会检查配置引用是否一致。
 
 ## 从 0.1 迁移
 

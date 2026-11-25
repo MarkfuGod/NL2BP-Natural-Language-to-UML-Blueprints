@@ -5,6 +5,9 @@ on:
     branches: [main]
   pull_request:
 
+env:
+  PLANTUML_VERSION: "1.2026.10"
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -21,6 +24,40 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
       - run: uv sync --group dev
-      - run: uv run ruff check .
-      - run: uv run ruff format --check .
+      - run: uv run ruff check . ../../skills
+      - run: uv run ruff format --check . ../../skills
       - run: uv run pytest -q
+
+  diagrams:
+    # Every reference example and every example diagram must parse with the pinned PlantUML,
+    # and the skill's real-PlantUML tests must pass.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - name: Install PlantUML ${{ env.PLANTUML_VERSION }}
+        run: |
+          sudo apt-get update -q && sudo apt-get install -y -q graphviz
+          mkdir -p "$HOME/bin"
+          curl -fsSL -o "$HOME/bin/plantuml.jar" \
+            "https://github.com/plantuml/plantuml/releases/download/v${PLANTUML_VERSION}/plantuml-${PLANTUML_VERSION}.jar"
+          printf '#!/bin/sh\nexec java -Djava.awt.headless=true -jar "%s/bin/plantuml.jar" "$@"\n' "$HOME" > "$HOME/bin/plantuml"
+          chmod +x "$HOME/bin/plantuml"
+          echo "$HOME/bin" >> "$GITHUB_PATH"
+      - run: plantuml -version | head -1
+      - name: Validate skill references and examples
+        run: |
+          python3 -I skills/nl2bp/scripts/nl2bp_check.py validate skills/nl2bp/references
+          python3 -I skills/nl2bp/scripts/nl2bp_check.py validate examples
+      - name: Examples are up to date
+        run: |
+          sh examples/regenerate.sh
+          git diff --exit-code -- examples/ ':!*.svg'
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - working-directory: workflow_multi_agent/crewai_code
+        run: uv sync --group dev && uv run pytest -q tests/test_skill.py tests/test_quality.py

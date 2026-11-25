@@ -1,0 +1,30 @@
+@startuml room_booking_activity_auto_release
+|Scheduler|
+start
+:每 60 秒触发一轮扫描;
+:获取分布式锁 (多实例互斥);
+|System|
+repeat
+  :取出一个候选预订 b
+   (status=RESERVED 且 start_at <= now);
+  if (b.checkedInAt 非空?) then (是, 已签到)
+    :b.status = CHECKED_IN, 本轮不处理;
+  elseif (now >= b.start_at + 15分钟?) then (是, 超时未签到)
+    fork
+      :b.status = RELEASED;
+    fork again
+      :cancelReason = NO_SHOW, releasedAt = now;
+    fork again
+      :写审计日志;
+    end fork
+    :该时段重新进入可预订集合;
+  else (否, 仍在签到窗口内)
+    :保留 RESERVED, 下一轮再判;
+  endif
+repeat while (还有候选预订?) is (是) not (否)
+:顺手关闭已结束预订 (end_at <= now -> COMPLETED);
+|Scheduler|
+:释放分布式锁;
+:等待到下一分钟;
+stop
+@enduml
