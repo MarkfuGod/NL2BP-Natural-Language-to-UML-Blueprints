@@ -107,7 +107,9 @@ def detect_test_command(project: Path) -> tuple[str, str] | None:
         quiet = "PIP_ROOT_USER_ACTION=ignore PIP_DISABLE_PIP_VERSION_CHECK=1"
         return (
             PY_IMAGE,
-            f"export {quiet}; {install} && pip install -q pytest httpx && python -m pytest -q",
+            # no -q: a project's own `addopts = -q` would make it -qq and drop the summary line
+            f"export {quiet}; {install} && pip install -q pytest httpx"
+            " && python -m pytest -p no:cacheprovider",
         )
     if (project / "package.json").is_file():
         return NODE_IMAGE, "npm install --silent --no-audit --no-fund && npm test"

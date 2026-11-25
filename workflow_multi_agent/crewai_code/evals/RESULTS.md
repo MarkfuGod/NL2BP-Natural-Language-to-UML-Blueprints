@@ -30,6 +30,27 @@ the blueprint never reached the code. With the checklist in the prompt, every ty
 implemented on the first pass. The `test_fix` round changed only `tests/test_admin.py`
 (+20/−5, no test functions or asserts removed); 57 test functions remain.
 
+## Single-agent with the quality gates
+
+Commit with the request timeout (the first attempt hung 33 min on one stalled request,
+which is what added the 300 s timeout; its partial data agreed with the rerun below).
+
+| | single-agent, gates |
+|---|---|
+| M1 diagrams valid | 22/22 |
+| M2 conformance | 1.0 (43/43) |
+| M3 tests in Docker | failed first → **passed** (86 tests) after critic → coder fix round |
+| reviewer's final verdict | CHANGES_REQUESTED (its own judgment; 1 fix round by default) |
+| requests / tokens (true per-stage sums) | 148 / 12.8M (~0.46 USD) |
+
+Where the tokens go: `04_code` 4.2M / 32 requests, `07_deploy` 3.3M / 32, `04_code_fix_1`
+2.4M / 33. Every `write_file` call re-sends the conversation. Review and diagnosis hit the
+iteration cap (16 requests), reading files one by one. Next cost lever: let code roles
+return a multi-file bundle in one answer, and give the reviewer the code inline.
+
+No pre-improvement single-agent arm was run (it had no gates to compare; budget kept for
+the multi-agent comparison).
+
 ## Caveats
 
 - One requirement, one run per arm: this shows the mechanism works on a real model, not
