@@ -20,20 +20,34 @@ from typing import Any, Protocol
 from agileworkflow import contract, plantuml, quality
 from agileworkflow.crews.agile_crew.agile_crew import StageResult
 from agileworkflow.settings import DEFAULT_LANGUAGE, Settings
-from agileworkflow.single_agent.roles import ROLES, find_role_prompts_dir, load_role_prompt
+from agileworkflow.single_agent.roles import (
+    ROLES,
+    find_role_prompts_dir,
+    load_reference,
+    load_role_prompt,
+)
 from agileworkflow.workspace import Workspace
 
-PREAMBLE = """你是“单代理多角色”开发工作流中的同一个 AI 代理，现在切换到角色：{title}。
+PREAMBLE = """Current role: {title}.
 
-下面是该角色的规则。它们原本写给 Roo Code 的自定义模式：角色切换由工作流替你完成，
-忽略规则中提到的 switch_mode、ask_followup_question、attempt_completion、execute_command、
-apply_diff、browser_action 等工具。本环境可用的工具只有：{tools}。
-信息不足时不要提问，在文档中写出“假设”一节说明你的假设后继续。
+How this run works: the workflow switches roles for you and runs every check command
+(`nl2bp_check.py validate / contract / conform / test`) itself; you cannot run commands,
+and measured results are given to you where a role needs them. Tools available to you:
+{tools}. `<skill>` files the rules mention are included below when this role needs them.
+You cannot ask the user questions: record assumptions in an "Assumptions" section.
+Return the document itself as your final answer (the workflow saves it).
 
-===== 角色规则开始 =====
+===== ROLE RULES =====
 {prompt}
-===== 角色规则结束 =====
+===== END ROLE RULES ====={references}
 """
+
+# Skill references each diagram-producing role gets inline.
+ROLE_REFERENCES = {
+    "01-req-gen": ("diagram-selection.md", "plantuml-syntax.md"),
+    "systemdesign": ("diagram-selection.md", "plantuml-syntax.md"),
+    "blueprintdesign": ("diagram-selection.md", "output-contract.md", "plantuml-syntax.md"),
+}
 
 VERDICT_RE = re.compile(r"VERDICT:\s*(APPROVED|CHANGES_REQUESTED)", re.IGNORECASE)
 
@@ -73,14 +87,25 @@ class SingleAgentWorkflow:
 
     def _describe(self, task: RoleTask) -> str:
         role = ROLES[task.role]
+        refs = "".join(
+            f"\n\n===== <skill>/references/{name} =====\n{load_reference(name)}"
+            for name in ROLE_REFERENCES.get(role.slug, ())
+        )
         head = PREAMBLE.format(
             title=role.title,
-            tools=", ".join(role.tools) or "无 / none",
+            tools=", ".join(role.tools) or "none",
             prompt=load_role_prompt(role.slug, self.prompts_dir),
+            references=refs,
         )
         return (
             f"{head}\n项目名称：{self.project_name}\n\n{task.body}\n\n输出语言：{self.language}。"
         )
+
+    stage_roles = {
+        "01_requirements": "01-req-gen",
+        "02_system_design": "systemdesign",
+        "03_blueprint": "blueprintdesign",
+    }
 
     def _do(self, task: RoleTask, save: bool = True) -> str:
         print(f"▶ [{task.role}] {task.stage} …", flush=True)
@@ -102,7 +127,7 @@ class SingleAgentWorkflow:
         if not diagrams:
             return
         if not self.settings.check_diagrams or not quality.plantuml_available():
-            self.quality["diagrams"] = {
+            self.quality.setdefault("diagrams", {})[stage] = {
                 "status": "skipped",
                 "reason": "disabled"
                 if not self.settings.check_diagrams
@@ -122,7 +147,7 @@ class SingleAgentWorkflow:
             reply = self._do(
                 RoleTask(
                     f"{stage}_repair_{record['repair_rounds']}",
-                    "blueprintdesign",
+                    self.stage_roles.get(stage, "blueprintdesign"),
                     "下面的 PlantUML 图无法通过语法检查（行号从 0 开始）：\n\n"
                     f"{quality.describe_errors(diagrams, errors)}\n\n"
                     "只修语法错误，保持图名与命名不变。最终答案只包含修复后的图，"
@@ -136,7 +161,7 @@ class SingleAgentWorkflow:
             errors = quality.check_diagrams(diagrams)
         record["invalid_final"] = len(errors)
         record["final_errors"] = [f"{e.name}: {e.message}" for e in errors]
-        self.quality["diagrams"] = record
+        self.quality.setdefault("diagrams", {})[stage] = record
         self.outputs[stage] = text
         self.workspace.save_stage(stage, text)
 
@@ -181,7 +206,7 @@ class SingleAgentWorkflow:
             raise ValueError("project_name and project_description are required")
         self.prompts_dir = self.prompts_dir or find_role_prompts_dir()
         self.workspace = Workspace.create(self.settings.output_dir, self.project_name)
-        self.workspace.write("requirements.md", self.project_description + "\n")
+        self.workspace.write("input.md", self.project_description + "\n")
         factory = self.runner_factory or (lambda ws, st: CrewRoleRunner(ws, st))
         self.runner = factory(self.workspace, self.settings)
         print(f"\n=== NL2BP 单 Agent 工作流: {self.project_name} → {self.workspace.root} ===\n")
@@ -191,30 +216,32 @@ class SingleAgentWorkflow:
             RoleTask(
                 "01_requirements",
                 "01-req-gen",
-                f"用户的自然语言需求：\n{self.project_description}\n\n"
-                "输出结构化的需求文档（Markdown）作为最终答案。",
-                "Markdown 需求文档",
+                f"User request:\n{self.project_description}\n\n"
+                "Write requirements.md as the role rules describe.",
+                "requirements.md: user stories, business rules, use case and activity diagrams",
             )
         )
         self._do(
             RoleTask(
                 "02_system_design",
                 "systemdesign",
-                f"需求文档：\n{o['01_requirements']}\n\n输出架构设计文档（Markdown）作为最终答案，本角色不画图。",
-                "Markdown 架构设计文档",
+                f"requirements.md:\n{o['01_requirements']}\n\n"
+                "Write architecture.md as the role rules describe.",
+                "architecture.md: stack, ADRs, C4 context and container diagrams",
             )
         )
         self._do(
             RoleTask(
                 "03_blueprint",
                 "blueprintdesign",
-                f"需求文档：\n{o['01_requirements']}\n\n架构设计文档：\n{o['02_system_design']}\n\n"
-                "按项目阶段生成 PlantUML 图（至少包含类图），遵守输出格式规范。"
-                "以包含全部图的 Markdown 文档作为最终答案。",
-                "含 PlantUML 代码块的 Markdown 蓝图文档",
+                f"requirements.md:\n{o['01_requirements']}\n\n"
+                f"architecture.md:\n{o['02_system_design']}\n\n"
+                "Write blueprint.md following references/output-contract.md exactly.",
+                "blueprint.md: class contract, sequence, ER and state diagrams, interfaces",
             )
         )
-        self._repair_diagrams("03_blueprint")
+        for stage in ("01_requirements", "02_system_design", "03_blueprint"):
+            self._repair_diagrams(stage)
         self.contract_types = contract.declared_types(plantuml.extract(o["03_blueprint"]))
         self._do(
             RoleTask(

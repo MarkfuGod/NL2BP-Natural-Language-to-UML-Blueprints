@@ -141,8 +141,8 @@ def test_quality_gates_repair_and_fix(settings, monkeypatch):
     assert q["diagrams"]["invalid_after_repair"] == 0
     assert q["tests_first"]["status"] == "failed" and q["tests"]["status"] == "passed"
     assert q["conformance"]["declared"] == 5
-    [dash] = runner.values["agile_dashboard"]
-    assert "后端测试（Docker 隔离运行）：passed" in dash["quality_signals"]
+    [summary] = runner.values["system_design_summary"]
+    assert "后端测试（Docker 隔离运行）：passed" in summary["project_status"]
 
 
 def test_no_fix_rounds_when_checks_pass(settings, monkeypatch):

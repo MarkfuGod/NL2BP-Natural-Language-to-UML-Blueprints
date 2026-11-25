@@ -52,6 +52,9 @@ def stage_names(include_helpers: bool = False) -> list[str]:
     ]
 
 
+GUIDE_KEYS = frozenset({"blueprint_guide", "diagram_guide", "syntax_reference"})
+
+
 def stage_inputs(stage: str) -> set[str]:
     """Placeholders a stage's task text needs."""
     _, tasks = load_config()
@@ -68,12 +71,15 @@ class AgileCrew:
         self.agents_config, self.tasks_config = load_config()
 
     @cached_property
-    def blueprint_guide(self) -> str:
-        # Single source shared with the single-agent workflow and the Roo Code mode.
-        from agileworkflow.single_agent.roles import find_role_prompts_dir
+    def guides(self) -> dict[str, str]:
+        """Skill references, the single source shared with the skill and Roo Code modes."""
+        from agileworkflow.single_agent.roles import diagram_guide, load_reference
 
-        path = find_role_prompts_dir() / "rules-blueprintdesign" / "03-output-contract.md"
-        return path.read_text(encoding="utf-8")
+        return {
+            "blueprint_guide": diagram_guide(contract=True),
+            "diagram_guide": diagram_guide(contract=False),
+            "syntax_reference": load_reference("plantuml-syntax.md"),
+        }
 
     def build(self, stage: str, values: Mapping[str, Any]):
         from crewai import Agent, Task
@@ -89,7 +95,7 @@ class AgileCrew:
         task_spec = self.tasks_config[f"{stage}_task"]
         agent_key = task_spec["agent"]
         agent_spec = self.agents_config[agent_key]
-        values = {"blueprint_guide": self.blueprint_guide, **values}
+        values = {**self.guides, **values}
 
         agent = Agent(
             role=agent_spec["role"].strip(),

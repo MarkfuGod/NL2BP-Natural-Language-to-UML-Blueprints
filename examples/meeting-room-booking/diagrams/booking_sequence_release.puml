@@ -1,0 +1,11 @@
+@startuml booking_sequence_release
+participant "Release job" as Job
+participant BookingService as Svc
+database SQLite as DB
+loop every minute
+  Job -> Svc ++ : release_no_shows(now)
+  Svc -> DB : due_for_release(now - 15 min)
+  Svc -> DB : UPDATE status = RELEASED
+  return released count
+end
+@enduml

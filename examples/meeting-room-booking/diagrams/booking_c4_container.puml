@@ -1,0 +1,19 @@
+@startuml booking_c4_container
+!include <C4/C4_Container>
+Person(employee, "Employee")
+Person(admin, "Administrator")
+System_Ext(sso, "Company SSO", "OIDC")
+System_Boundary(sys, "Room Booking") {
+  Container(web, "Web pages", "HTML + JS", "Search, my bookings, admin")
+  Container(api, "Booking API", "Python, FastAPI", "Rules BR-1..BR-4, reports")
+  Container(jobs, "Release job", "APScheduler", "Releases no-shows every minute")
+  ContainerDb(db, "Database", "SQLite", "Rooms, bookings, maintenance")
+}
+Rel(employee, web, "Uses", "HTTPS")
+Rel(admin, web, "Uses", "HTTPS")
+Rel(web, api, "Calls", "JSON/HTTPS")
+Rel(api, sso, "Validates tokens", "OIDC")
+Rel(api, db, "Reads/Writes", "SQL")
+Rel(jobs, db, "Releases bookings", "SQL")
+SHOW_LEGEND()
+@enduml

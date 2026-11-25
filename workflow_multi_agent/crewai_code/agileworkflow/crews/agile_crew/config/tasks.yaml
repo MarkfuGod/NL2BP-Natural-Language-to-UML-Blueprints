@@ -1,316 +1,233 @@
-# One entry per workflow stage. Each stage runs once, as a one-task crew.
-# Placeholders like {project_name} are filled by agileworkflow.templating
-# (single pass, unknown braces left untouched). Earlier stage outputs are
-# passed in by name, so each task sees exactly the documents it needs.
-#
-# Documents come back as the task's final answer; the flow saves them to
-# docs/<stage>.md and extracts every @startuml block to diagrams/*.puml.
-# Only code-producing stages use the write_file tool.
-
-system_design_task:
-  agent: system_design_agent
-  description: >
-    项目名称：{project_name}
-
-    项目需求（自然语言）：
-    {project_description}
-
-    作为系统架构设计专家，基于以上需求输出系统架构设计方案：
-    1. 系统概述与主要功能
-    2. 整体架构：组件、模块及其关系
-    3. 技术选型及理由
-    4. 可扩展性、性能、安全性考虑
-    5. 关键架构决策（ADR 风格：背景 / 决策 / 后果）
-    6. 一张组件图，用 ```plantuml 代码块包裹的 @startuml … @enduml 表示
-
-    输出语言：{language}。直接以 Markdown 文档作为最终答案。
-  expected_output: >
-    一份 Markdown 系统架构设计文档，含技术选型、架构决策和一张 PlantUML 组件图。
+# One entry per workflow stage; each stage runs once as a one-task crew.
+# {placeholders} are filled by agileworkflow.templating (single pass). Upstream stage
+# outputs are passed in by name. Documents come back as the final answer; the flow saves
+# them, validates every PlantUML block (repairing failures), and commits them to git.
+# {diagram_guide} / {blueprint_guide} are the nl2bp skill's references
+# (skills/nl2bp/references/), the single source shared with the skill and Roo Code modes.
 
 requirement_analysis_task:
   agent: requirement_analysis_agent
   description: >
-    项目名称：{project_name}
+    Project: {project_name}
 
-    项目需求（自然语言）：
+    Request:
     {project_description}
 
-    系统架构设计方案：
-    {system_design}
+    Write requirements.md:
+    1. Goal (2–3 sentences) and actors.
+    2. User stories US-1… ("As a … I want … so that …") with Given/When/Then acceptance
+       criteria and MoSCoW priority.
+    3. Business rules BR-1… with exact numbers (limits, rates, deadlines).
+    4. Non-functional requirements that change the design; out of scope; Assumptions.
+    5. One use case diagram and one activity diagram per rule-heavy flow.
 
-    作为需求分析专家，输出需求分析文档：
-    1. 功能需求与非功能需求清单
-    2. 用户故事（As a … I want … so that …）及验收标准（Given/When/Then）
-    3. MoSCoW 优先级排序
-    4. 需求风险、依赖与冲突
-    5. 一张用例图（```plantuml 代码块，@startuml … @enduml）
+    Diagram guide:
+    {diagram_guide}
 
-    输出语言：{language}。直接以 Markdown 文档作为最终答案。
+    Write in {language}; PlantUML identifiers in English. Return the document as your final answer.
   expected_output: >
-    一份 Markdown 需求分析文档，含优先级排序的用户故事、验收标准和用例图。
+    requirements.md with numbered user stories, business rules, assumptions, a use case
+    diagram and activity diagrams.
 
-sprint_planning_task:
-  agent: agile_dashboard_agent
+system_design_task:
+  agent: system_design_agent
   description: >
-    项目名称：{project_name}
-    Sprint 周期：{sprint_duration} 天
+    Project: {project_name}
 
-    需求分析文档：
+    requirements.md:
     {requirement_analysis}
 
-    根据需求分析制定第一个 Sprint 的计划：
-    1. Sprint 目标
-    2. Sprint Backlog：从需求中挑选的用户故事与技术任务，含故事点估算
-    3. 按天或按周的里程碑与交付物
-    4. 风险与应对
+    Write architecture.md:
+    1. Stack (language, framework, storage, deployment target), one line of reason each.
+       Prefer Python (FastAPI + SQLite) or Node.js for the backend unless a requirement
+       says otherwise.
+    2. Decisions in ADR form (context / decision / consequence).
+    3. C4 Context and C4 Container diagrams (`!include <C4/C4_Context>` / `<C4/C4_Container>`).
+    4. How each non-functional requirement is met.
+    Do not draw class, sequence or ER diagrams here.
 
-    输出语言：{language}。直接以 Markdown 文档作为最终答案。
+    Diagram guide:
+    {diagram_guide}
+
+    Write in {language}; PlantUML identifiers in English. Return the document as your final answer.
   expected_output: >
-    一份 Markdown Sprint 计划，含目标、Backlog、估算和里程碑。
+    architecture.md with stack, ADRs and C4 context and container diagrams.
+
+sprint_planning_task:
+  agent: requirement_analysis_agent
+  description: >
+    Project: {project_name}. Sprint length: {sprint_duration} days.
+
+    requirements.md:
+    {requirement_analysis}
+
+    Write sprint_plan.md: sprint goal; backlog of the Must-have stories with story-point
+    estimates; a Gantt chart of the sprint (`@startgantt`, see the guide); risks.
+
+    Diagram guide:
+    {diagram_guide}
+
+    Write in {language}. Return the document as your final answer.
+  expected_output: >
+    sprint_plan.md with goal, estimated backlog, a Gantt chart and risks.
 
 blueprint_design_task:
   agent: blueprint_design_agent
   description: >
-    项目名称：{project_name}
+    Project: {project_name}
 
-    系统架构设计方案：
-    {system_design}
-
-    需求分析文档：
+    requirements.md:
     {requirement_analysis}
 
-    人类协作者的评审意见（为空则忽略）：
+    architecture.md:
+    {system_design}
+
+    Human reviewer's feedback on the previous version (ignore if empty):
     {review_feedback}
 
-    作为系统蓝图设计专家，把以上文档转化为系统蓝图：
-    1. 按模块给出 PlantUML 图：至少包含类图、时序图、部署图，按需补充活动图、状态图、文件结构图
-    2. 组件间接口规范（接口名、方法、请求/响应字段）
-    3. 数据流与处理流程说明
-
-    严格遵守下面的蓝图写作规范：
+    Write blueprint.md exactly as the output contract below requires:
+    1. Class diagrams declaring every type the code must contain (the contract), with
+       names idiomatic for the chosen stack.
+    2. A sequence diagram per core user story.
+    3. An IE entity-relationship diagram for the database; state diagrams for entities with
+       a lifecycle.
+    4. The interface table and the data flow.
 
     {blueprint_guide}
 
-    输出语言：{language}（PlantUML 中的标识符使用英文）。直接以 Markdown 文档作为最终答案。
+    Write in {language}; PlantUML identifiers in English. Return the document as your final answer.
   expected_output: >
-    一份 Markdown 系统蓝图，每张图按规范放在 ```plantuml 代码块中并附说明，另含接口规范与数据流。
+    blueprint.md following the output contract: class contract, sequence, ER and state
+    diagrams, interface table, data flow.
 
 frontend_design_task:
   agent: frontend_design_agent
   description: >
-    项目名称：{project_name}
+    Project: {project_name}
 
-    系统蓝图：
+    blueprint.md:
     {blueprint_design}
 
-    蓝图类图声明的类型（契约清单，前端用到的部分必须使用同名类型/组件/模块）：
+    Contract types (use these names where the frontend models them):
     {contract}
 
-    作为前端设计实现专家，严格按蓝图实现一个可运行的最小前端：
-    1. 用 write_file 工具逐个写入完整文件，路径以 frontend/ 开头（例如 frontend/index.html、frontend/js/app.js）
-    2. 文件必须完整可运行，不写省略号或"此处省略"
-    3. API 调用与蓝图中的接口规范一致
+    Implement a minimal runnable frontend with the write_file tool, paths under frontend/
+    (e.g. frontend/index.html, frontend/js/app.js). Complete files only. Call only the
+    endpoints in the blueprint's interface table.
 
-    最终答案是一份前端实现报告（Markdown）：页面与组件结构、调用的接口、已写入的文件列表、运行方式。
-    输出语言：{language}。
+    Final answer: a short report in {language}: pages, endpoints used, files written, how
+    to run.
   expected_output: >
-    frontend/ 下的可运行前端代码文件，以及一份列出这些文件和运行方式的前端实现报告。
+    Files under frontend/ and a report listing them and how to run.
 
 backend_design_task:
   agent: backend_design_agent
   description: >
-    项目名称：{project_name}
+    Project: {project_name}
 
-    系统蓝图：
+    blueprint.md:
     {blueprint_design}
 
-    蓝图类图声明的类型（契约清单，后端必须用同名类实现其中的领域模型与服务）：
+    Contract types (implement every one under this exact name):
     {contract}
 
-    作为后端设计实现专家，严格按蓝图实现一个可运行的最小后端：
-    1. 用 write_file 工具逐个写入完整文件，路径以 backend/ 开头（例如 backend/app/main.py）
-    2. 优先使用 Python（FastAPI + SQLite）或 Node.js；必须写依赖清单
-       （backend/requirements.txt 或 backend/package.json）
-    3. 必须写可在 backend/ 目录下直接运行的测试（Python：backend/tests/test_*.py，
-       用 `python -m pytest` 运行；Node：package.json 的 "test" 脚本），覆盖蓝图中的核心业务规则
-    4. 测试不得依赖外部服务或网络；数据库用 SQLite 或内存存储
-    5. 接口与蓝图中的接口规范一致，文件完整可运行
+    Implement the backend with the write_file tool, paths under backend/:
+    1. Every contract type, every endpoint in the interface table, every business rule BR-*.
+    2. Dependencies in backend/requirements.txt (Python) or backend/package.json (Node).
+    3. Tests for each acceptance criterion that run offline from backend/
+       (backend/tests/test_*.py with `python -m pytest`, or the package.json "test" script).
+       SQLite or in-memory storage; no network.
+    4. Complete files only.
 
-    最终答案是一份后端实现报告（Markdown）：数据模型、API 列表、已写入的文件列表、运行和测试方式。
-    输出语言：{language}。
+    Final answer: a short report in {language}: data model, API, files written, how to run
+    and test.
   expected_output: >
-    backend/ 下的可运行后端代码文件，以及一份列出这些文件、API 和运行方式的后端实现报告。
-
-version_control_task:
-  agent: version_control_agent
-  description: >
-    项目名称：{project_name}
-
-    系统蓝图：
-    {blueprint_design}
-
-    前端实现报告：
-    {frontend_design}
-
-    后端实现报告：
-    {backend_design}
-
-    本次运行目录的真实 git 历史（由工作流提交，以此为准，不要编造提交）：
-    {git_log}
-
-    作为版本控制管理专家，输出版本控制报告：
-    1. 为每个文档和代码模块分配语义化版本号（SemVer），依据上面的真实提交
-    2. 基于真实提交的 CHANGELOG，以及对现有提交信息的改进建议（Conventional Commits）
-    3. 分支策略与合并规则
-    4. 前后端接口变更的冲突预防措施
-
-    输出语言：{language}。直接以 Markdown 文档作为最终答案。
-  expected_output: >
-    一份 Markdown 版本控制报告，含版本号、CHANGELOG、提交序列和分支策略。
-
-agile_dashboard_task:
-  agent: agile_dashboard_agent
-  description: >
-    项目名称：{project_name}
-
-    Sprint 计划：
-    {sprint_plan}
-
-    前端实现报告：
-    {frontend_design}
-
-    后端实现报告：
-    {backend_design}
-
-    工作流实测的质量信号（真实测量结果，状态判断必须以此为依据，不得与之矛盾）：
-    {quality_signals}
-
-    作为敏捷仪表盘管理专家，对照 Sprint 计划输出项目状态报告：
-    1. 每个用户故事的状态（完成 / 进行中 / 未开始）与依据；没有通过测试的故事不能标为完成
-    2. 关键指标：完成故事点、燃尽情况估计、风险数
-    3. 一张看板图（```plantuml 代码块，@startuml … @enduml，用分区表示 To Do / Doing / Done）
-    4. 阻碍与风险及建议
-
-    输出语言：{language}。直接以 Markdown 文档作为最终答案。
-  expected_output: >
-    一份 Markdown 项目状态报告，含故事状态、指标、PlantUML 看板图和风险。
-
-feedback_planning_task:
-  agent: feedback_planning_agent
-  description: >
-    项目名称：{project_name}
-
-    前端实现报告：
-    {frontend_design}
-
-    后端实现报告：
-    {backend_design}
-
-    项目状态报告：
-    {agile_dashboard}
-
-    工作流实测的质量信号：
-    {quality_signals}
-
-    人类协作者对蓝图的评审意见：
-    {review_feedback}
-
-    作为反馈规划专家，输出反馈分析与下一迭代计划（只依据上面的真实信号与评审意见，不要虚构用户反馈）：
-    1. 从质量信号、实现报告和状态报告中识别的问题与缺口（按影响排序）
-    2. 回顾：做得好的 / 需改进的 / 行动项
-    3. 下一迭代的目标与优先级排序的 Backlog
-
-    输出语言：{language}。直接以 Markdown 文档作为最终答案。
-  expected_output: >
-    一份 Markdown 反馈分析与迭代规划报告。
+    Files under backend/ including tests, and a report listing them and how to run.
 
 system_design_summary_task:
   agent: blueprint_design_agent
   description: >
-    项目名称：{project_name}
+    Project: {project_name}
 
-    系统架构设计方案：
+    architecture.md:
     {system_design}
 
-    需求分析文档：
-    {requirement_analysis}
-
-    系统蓝图：
+    blueprint.md:
     {blueprint_design}
 
-    前端实现报告：
+    Frontend report:
     {frontend_design}
 
-    后端实现报告：
+    Backend report:
     {backend_design}
 
-    版本控制报告：
-    {version_control}
+    Project status (generated from git history and measured checks; treat as fact):
+    {project_status}
 
-    项目状态报告：
-    {agile_dashboard}
+    Write summary.md: the final architecture and components; every deviation of the code
+    from the blueprint (use the measured conformance and test results); strengths and
+    limits; next steps ranked by impact. Include the final C4 Container diagram
+    (`@startuml {project_slug}_c4_container_final`).
 
-    反馈分析与迭代规划：
-    {feedback_planning}
-
-    作为系统蓝图设计专家，输出最终系统设计总结：
-    1. 最终架构与组件（与实现报告核对，标出与蓝图的偏差）
-    2. 关键技术选择与架构决策
-    3. 优势与限制
-    4. 后续扩展与改进
-    5. 最终系统架构图（```plantuml 代码块，@startuml {project_slug}_final_architecture … @enduml）
-
-    输出语言：{language}。直接以 Markdown 文档作为最终答案。
+    Write in {language}; PlantUML identifiers in English. Return the document as your final answer.
   expected_output: >
-    一份 Markdown 系统设计总结，含与蓝图的偏差说明和最终架构 PlantUML 图。
+    summary.md with architecture, measured deviations, limits, next steps and a final C4
+    Container diagram.
 
 # ---------------------------------------------------------------------------
-# Helper tasks: run by the flow only when a check fails. Not stages of their own.
+# Helper tasks: run by the flow only when a check fails.
 
 diagram_repair_task:
   agent: blueprint_design_agent
   helper: true
   description: >
-    下面的 PlantUML 图无法通过 PlantUML 语法检查（行号从 0 开始，对应 @start 行为第 0 行）：
+    These PlantUML diagrams fail `plantuml -syntax` (line numbers are 0-based; the @start
+    line is 0):
 
     {broken_diagrams}
 
-    逐一修复这些图，只修语法错误，保持图名、元素命名与含义不变。
-    最终答案只包含修复后的图，每张图一个 ```plantuml 代码块，首行保留原来的 @startXXX <图名>。
+    Fix only the syntax errors; keep each diagram's name, element names and meaning.
+    Syntax reference:
+    {syntax_reference}
+
+    Final answer: only the fixed diagrams, each in its own ```plantuml block whose first
+    line keeps the original `@startX <name>`.
   expected_output: >
-    每张修复后的图一个 ```plantuml 代码块，图名与原图一致。
+    One ```plantuml block per fixed diagram, names unchanged.
 
 conformance_fix_task:
   agent: backend_design_agent
   helper: true
   description: >
-    蓝图类图声明了下列类型，但在生成的代码（frontend/、backend/）中找不到：
+    The blueprint's class diagrams declare these types, but the code under frontend/ and
+    backend/ does not contain them:
     {missing_types}
 
-    系统蓝图：
+    blueprint.md:
     {blueprint_design}
 
-    用 list_files / read_file 查看现有代码，然后用 write_file 补上这些类型
-    （按蓝图中的属性与关系实现，写回完整文件），不要删除或重命名已有的类型。
-    最终答案是修改说明：补了哪些类型、在哪个文件。
+    Use list_files / read_file to inspect the code, then write_file to add the missing types
+    as the blueprint defines them (complete files). Do not delete or rename existing types.
+    Final answer: which types you added, in which files.
   expected_output: >
-    补齐缺失类型后的代码文件，以及修改说明。
+    Updated files containing the missing types, and a list of the changes.
 
 test_fix_task:
   agent: backend_design_agent
   helper: true
   description: >
-    在隔离容器中运行 backend/ 的测试失败了。
+    The backend tests failed in an isolated container.
 
-    运行命令：{test_command}
-    输出（末尾）：
+    Command: {test_command}
+    Output (tail):
     {test_output}
 
-    系统蓝图：
+    blueprint.md:
     {blueprint_design}
 
-    用 list_files / read_file 定位原因，用 write_file 写回修复后的完整文件。
-    修代码而不是删测试或放宽断言；如果确实是测试本身写错，修正测试并在说明中写明理由。
-    依赖缺失就补进 requirements.txt / package.json。最终答案是修复说明。
+    Use list_files / read_file to find the cause and write_file to save fixed, complete
+    files. Fix the code, not the tests; change a test only if it contradicts the
+    requirements, and say so. Add missing dependencies to requirements.txt / package.json.
+    Final answer: what you changed and why.
   expected_output: >
-    修复后的代码文件与修复说明。
+    Fixed files and an explanation of each change.

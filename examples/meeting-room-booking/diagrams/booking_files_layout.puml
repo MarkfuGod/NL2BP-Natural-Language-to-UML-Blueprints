@@ -1,0 +1,14 @@
+@startfiles booking_files_layout
+/code/app/main.py
+/code/app/domain.py
+/code/app/policy.py
+/code/app/services/booking_service.py
+/code/app/services/room_service.py
+/code/app/services/report_service.py
+/code/app/repository.py
+/code/app/jobs.py
+/code/web/index.html
+/code/web/app.js
+/code/tests/test_booking_rules.py
+/code/requirements.txt
+@endfiles

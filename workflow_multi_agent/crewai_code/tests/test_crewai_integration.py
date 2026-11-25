@@ -60,7 +60,8 @@ def test_agile_stage_runs_through_crewai(settings, monkeypatch):
     assert "@startuml demo_class_core" in result.text
     prompt = "\n".join(fake.prompts)
     assert "{not_a_placeholder}" in prompt  # passed through untouched
-    assert "Blueprint Writer guide" in prompt  # guide injected
+    assert "Blueprint output contract" in prompt  # skill references injected
+    assert "PlantUML syntax reference" in prompt
     assert not re.search(r"\{(system_design|requirement_analysis|language)\}", prompt)
 
 
@@ -69,7 +70,7 @@ def test_code_stage_gets_write_tool(settings, monkeypatch):
     ws = Workspace.create(settings.output_dir, "demo")
     agent, _ = AgileCrew(settings, ws).build("backend_design", {"blueprint_design": "x"})
     assert [t.name for t in agent.tools] == ["write_file"]
-    agent, _ = AgileCrew(settings, ws).build("version_control", {})
+    agent, _ = AgileCrew(settings, ws).build("system_design", {})
     assert agent.tools == []
 
 

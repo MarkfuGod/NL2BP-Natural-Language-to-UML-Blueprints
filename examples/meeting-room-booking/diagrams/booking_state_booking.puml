@@ -1,0 +1,10 @@
+@startuml booking_state_booking
+[*] --> CONFIRMED : book
+CONFIRMED --> CHECKED_IN : check in\n[start - 5 min .. start + 15 min]
+CONFIRMED --> CANCELLED : cancel [owner or admin]
+CONFIRMED --> RELEASED : no check-in by start + 15 min
+CHECKED_IN --> COMPLETED : end time passed
+CANCELLED --> [*]
+RELEASED --> [*]
+COMPLETED --> [*]
+@enduml

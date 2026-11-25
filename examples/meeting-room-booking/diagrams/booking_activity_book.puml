@@ -1,0 +1,18 @@
+@startuml booking_activity_book
+|Employee|
+start
+:Choose room, date and time;
+|Booking API|
+if (Duration > 4 h or start > 30 days ahead?) then (yes)
+  :Reject 422 (BR-2); <<output>>
+  stop
+elseif (Overlaps a booking or maintenance?) then (yes)
+  :Reject 409 (BR-1); <<output>>
+  stop
+else (no)
+  :Create booking CONFIRMED;
+endif
+|Employee|
+:See confirmation;
+stop
+@enduml

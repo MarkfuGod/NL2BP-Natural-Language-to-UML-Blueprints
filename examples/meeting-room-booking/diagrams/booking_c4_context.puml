@@ -1,0 +1,11 @@
+@startuml booking_c4_context
+!include <C4/C4_Context>
+Person(employee, "Employee", "Finds, books and checks in")
+Person(admin, "Administrator", "Manages rooms, reads reports")
+System(booking, "Room Booking", "Search, booking, check-in, reports")
+System_Ext(sso, "Company SSO", "OIDC identity provider")
+Rel(employee, booking, "Uses", "HTTPS")
+Rel(admin, booking, "Administers", "HTTPS")
+Rel(booking, sso, "Authenticates users via", "OIDC")
+SHOW_LEGEND()
+@enduml
