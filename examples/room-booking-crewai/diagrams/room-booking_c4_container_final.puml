@@ -1,0 +1,32 @@
+@startuml room-booking_c4_container_final
+!include <C4/C4_Container>
+title 会议室预订系统 — 最终 C4 Container（as-built）
+
+Person(employee, "员工 Employee", "公司账号持有者；搜索、预订、签到、取消自己的预订")
+Person(admin, "行政管理员 Admin", "EMPLOYEE 权限超集；维护房间/维护时段、看报表与某日全部预订")
+
+System_Ext(sso, "公司账号服务 SSO", "OIDC / JWKS；签发 8 小时访问令牌，携带 sub / name / roles")
+System_Ext(notify, "通知渠道（本期未接入）", "BookingReleased 事件的目标端点；未配置时只记 NOTIFY_SKIPPED")
+
+System_Boundary(sys, "会议室预订系统") {
+  Container(web, "web", "React 18 UMD + htm + 原生 ES Module（零构建）", "index.html 员工端 / admin.html 管理后台；Bearer Token 存 localStorage；时间按 Asia/Shanghai 解释与渲染")
+  Container(api, "api", "Python 3.12 + FastAPI + Pydantic v2 + Uvicorn", "app/main.py：REST /api/v1、鉴权依赖、BR-1~BR-24 校验、冲突判定、报表聚合、审计同事务、/healthz、/metrics")
+  Container(scheduler, "scheduler", "Python 3.12（app/services/scheduler.py，asyncio 循环）", "每 60 秒：advisory lock 单活、未签到释放、到期完成、过期审计清理、释放通知")
+  ContainerDb(db, "db", "PostgreSQL 14+（生产） / SQLite（本地与测试）", "rooms / bookings / maintenance_windows / audit_logs；btree_gist 排除约束（仅 PostgreSQL 生效）")
+}
+
+Rel(employee, web, "使用浏览器访问", "HTTPS")
+Rel(admin, web, "使用浏览器访问", "HTTPS")
+Rel(web, api, "调用 /api/v1", "JSON / HTTPS + Bearer")
+Rel(api, sso, "校验 JWT 签名、读取 roles", "HTTPS / JWKS")
+Rel(api, db, "事务读写、get_for_update 行锁、审计同事务", "SQL / TCP")
+Rel(scheduler, db, "pg_try_advisory_lock、条件 UPDATE、审计清理", "SQL / TCP")
+Rel(scheduler, notify, "notify_released(bookingId, reason, releasedAt)", "HTTPS")
+
+note right of web
+  as-built 偏差：本图按 ADR-004 画的是
+  "web 只与 api 通信"。当前开发态实际由
+  python3 -m http.server 5173 托管前端、
+  api 在 8000，属跨源调用（见 D-1/D-2）。
+end note
+@enduml

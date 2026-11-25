@@ -1,0 +1,19 @@
+@startuml room_booking_sequence_admin_bookings
+autonumber
+actor Admin
+participant "web (React SPA)" as Web
+participant "api (FastAPI)" as API
+participant "AdminBookingService" as ABS
+participant "UnitOfWork" as UoW
+database "PostgreSQL" as DB
+Admin -> Web : open daily booking board
+Web -> API : GET /api/v1/admin/bookings with date
+API -> API : require_admin(principal)
+API -> ABS : list_by_date(on_date)
+ABS -> UoW : bookings.list_by_date(on_date)
+UoW -> DB : SELECT bookings on date ordered by room_id, start_at
+DB --> UoW : bookings
+UoW --> ABS : bookings
+ABS --> API : bookings
+API --> Web : 200 AdminBookingListResponse
+@enduml

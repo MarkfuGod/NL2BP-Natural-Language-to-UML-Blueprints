@@ -1,0 +1,197 @@
+@startuml room_booking_class_api
+hide circle
+package api {
+  enum ErrorCode {
+    UNAUTHENTICATED
+    FORBIDDEN
+    INVALID_DURATION
+    INVALID_TIME_GRANULARITY
+    INVALID_DATE_RANGE
+    BOOKING_WINDOW_EXCEEDED
+    OUT_OF_BUSINESS_HOURS
+    START_IN_PAST
+    ROOM_SLOT_CONFLICT
+    CAPACITY_EXCEEDED
+    INVALID_ATTENDEES
+    INVALID_CAPACITY
+    ROOM_NAME_DUPLICATED
+    ROOM_HAS_FUTURE_BOOKINGS
+    MAINTENANCE_CONFLICT
+    INVALID_MAINTENANCE_WINDOW
+    REPORT_RANGE_TOO_LARGE
+    CHECKIN_NOT_OPEN
+    BOOKING_NOT_ACTIVE
+    CANNOT_CANCEL_AFTER_START
+  }
+
+  class ErrorResponse {
+    +code: ErrorCode
+    +message: str
+    +details: dict[str, Any] | None
+  }
+
+  class MeResponse {
+    +user_id: str
+    +display_name: str
+    +roles: list[Role]
+  }
+
+  class RoomItem {
+    +id: UUID
+    +name: str
+    +floor: str
+    +capacity: int
+    +equipment: list[Equipment]
+    +status: RoomStatus
+  }
+
+  class RoomPage {
+    +items: list[RoomItem]
+    +page: int
+    +size: int
+    +total: int
+  }
+
+  class AvailableRoomsQuery {
+    +date: date
+    +start: time
+    +end: time
+    +attendees: int
+    +equipment: list[Equipment]
+    +page: int
+    +size: int
+  }
+
+  class CreateBookingRequest {
+    +room_id: UUID
+    +date: date
+    +start: time
+    +end: time
+    +attendees: int
+    +title: str
+  }
+
+  class BookingResponse {
+    +id: UUID
+    +room_id: UUID
+    +booked_by: str
+    +start_at: datetime
+    +end_at: datetime
+    +attendees: int
+    +title: str
+    +status: BookingStatus
+    +check_in_deadline: datetime
+    +checked_in_at: datetime | None
+    +cancel_reason: CancelReason | None
+    +released_at: datetime | None
+  }
+
+  class MyBookingsQuery {
+    +from_date: date
+    +to_date: date
+    +status: BookingStatus | None
+  }
+
+  class BookingListResponse {
+    +items: list[BookingResponse]
+  }
+
+  class CreateRoomRequest {
+    +name: str
+    +floor: str
+    +capacity: int
+    +equipment: list[Equipment]
+  }
+
+  class UpdateRoomRequest {
+    +name: str | None
+    +floor: str | None
+    +capacity: int | None
+    +equipment: list[Equipment] | None
+  }
+
+  class RoomResponse {
+    +id: UUID
+    +name: str
+    +floor: str
+    +capacity: int
+    +equipment: list[Equipment]
+    +status: RoomStatus
+  }
+
+  class CreateMaintenanceRequest {
+    +start_at: datetime
+    +end_at: datetime
+    +reason: str
+    +force: bool
+  }
+
+  class ConflictBookingItem {
+    +id: UUID
+    +booked_by: str
+    +start_at: datetime
+    +end_at: datetime
+  }
+
+  class MaintenanceConflictResponse {
+    +code: ErrorCode
+    +message: str
+    +conflicts: list[ConflictBookingItem]
+  }
+
+  class MaintenanceWindowResponse {
+    +id: UUID
+    +room_id: UUID
+    +start_at: datetime
+    +end_at: datetime
+    +reason: str
+    +status: MaintenanceStatus
+  }
+
+  class UtilizationQuery {
+    +from_date: date
+    +to_date: date
+    +group_by: ReportGroupBy
+  }
+
+  class UtilizationReportItem {
+    +room_id: UUID
+    +room_name: str
+    +available_minutes: int
+    +booked_minutes: int
+    +used_minutes: int
+    +booking_rate: Decimal
+    +utilization_rate: Decimal
+  }
+
+  class UtilizationReportResponse {
+    +items: list[UtilizationReportItem]
+    +from_date: date
+    +to_date: date
+  }
+
+  class AdminBookingsQuery {
+    +date: date
+  }
+
+  class AdminBookingItem {
+    +id: UUID
+    +room_id: UUID
+    +booked_by: str
+    +start_at: datetime
+    +end_at: datetime
+    +status: BookingStatus
+  }
+
+  class AdminBookingListResponse {
+    +items: list[AdminBookingItem]
+  }
+}
+ErrorResponse --> ErrorCode
+MaintenanceConflictResponse --> ErrorCode
+MaintenanceConflictResponse "1" -- "0..*" ConflictBookingItem : contains
+RoomPage "1" -- "0..*" RoomItem : items
+BookingListResponse "1" -- "0..*" BookingResponse : items
+UtilizationReportResponse "1" -- "0..*" UtilizationReportItem : items
+AdminBookingListResponse "1" -- "0..*" AdminBookingItem : items
+@enduml

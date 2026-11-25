@@ -1,0 +1,19 @@
+@startuml room_booking_c4_context
+!include <C4/C4_Context>
+title 会议室预订系统 — C4 Context
+
+Person(employee, "员工 Employee", "公司账号持有者；搜索、预订、签到、取消自己的预订")
+Person(admin, "行政管理员 Admin", "员工权限的超集；维护会议室与维护时段，查看使用率报表与某日全部预订")
+
+System(booking, "会议室预订系统", "检索空闲会议室、保证同房间同时段唯一预订、签到与未签到自动释放、维护时段、使用率报表")
+
+System_Ext(sso, "公司账号服务 SSO", "OIDC 提供 sub / name / roles（EMPLOYEE、ADMIN）")
+System_Ext(notify, "通知渠道（本期未接入）", "接收 BookingReleased 事件的目标端点")
+
+Rel(employee, sso, "登录获取访问令牌", "OIDC")
+Rel(admin, sso, "登录获取访问令牌", "OIDC")
+Rel(employee, booking, "搜索 / 预订 / 签到 / 取消 / 查看我的预订", "HTTPS + Bearer Token")
+Rel(admin, booking, "管理房间、维护时段、报表、某日预订", "HTTPS + Bearer Token")
+Rel(booking, sso, "校验访问令牌、读取 roles", "OIDC / JWKS")
+Rel(booking, notify, "推送 BookingReleased（启用时）", "HTTPS")
+@enduml

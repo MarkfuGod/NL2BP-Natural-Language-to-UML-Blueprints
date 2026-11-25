@@ -51,6 +51,27 @@ return a multi-file bundle in one answer, and give the reviewer the code inline.
 No pre-improvement single-agent arm was run (it had no gates to compare; budget kept for
 the multi-agent comparison).
 
+## Round 2 (2026-11-26): skill references, task-spec prompts, 5 agents
+
+Commit `887dfd6`: prompts rewritten as task specs, PlantUML references updated to 1.2026
+(checked against the local binary), version-control / dashboard / feedback agents replaced by
+code, requirements before architecture. Same model.
+
+| | gates run, old prompts (`046a6db`) | new prompts, library | new prompts, room booking |
+|---|---|---|---|
+| M1 diagrams valid | 30/30 | 31/31 | 28/28 |
+| M2 conformance | 1.0 (71) | 1.0 (60) | 1.0 (66) |
+| M3 tests in Docker | passed after 1 fix | passed after 1 fix (99 tests) | passed first time (145 tests) |
+| requests / tokens | 52 / 3.80M | 59 / 3.37M | 46 / 3.60M |
+| diagrams using deprecated `skinparam` | **15** | 0 | 0 |
+| C4 / IE ER / Gantt diagrams | 0 / 0 / 0 | 3 / 1 / 1 | 3 / 1 / 1 |
+| sequence diagrams | 7 | 13 | 13 |
+
+What changed: the model now follows the current PlantUML conventions in the references (styles
+instead of `skinparam`, C4 for architecture, an ER schema, a Gantt sprint plan) and draws a
+sequence per user story. Removing three agents did not cost quality on M1–M3 and the cost stayed
+in the same range. Still one run per requirement.
+
 ## Caveats
 
 - One requirement, one run per arm: this shows the mechanism works on a real model, not

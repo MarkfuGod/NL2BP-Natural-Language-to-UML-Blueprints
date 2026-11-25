@@ -1,0 +1,18 @@
+@startuml room_booking_sequence_login_me
+autonumber
+actor Employee
+participant "web (React SPA)" as Web
+participant "api (FastAPI)" as API
+participant "SSO (OIDC/JWKS)" as SSO
+Employee -> Web : open application
+Web -> API : GET /api/v1/me with Bearer token
+API -> SSO : verify JWT signature and load JWKS
+SSO --> API : sub, name, roles
+alt token valid
+  API --> Web : 200 MeResponse userId, displayName, roles
+  Web --> Employee : render identity and menu
+else missing or expired token
+  API --> Web : 401 ErrorResponse UNAUTHENTICATED
+  Web --> Employee : show login prompt
+end
+@enduml

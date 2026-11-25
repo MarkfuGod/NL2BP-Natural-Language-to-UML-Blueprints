@@ -1,15 +1,13 @@
-# NL2BP: Natural Language to UML Blueprint | 自然语言到UML蓝图
+# NL2BP: Natural Language to UML Blueprint | 自然语言到 UML 蓝图
 
 <div align="center">
 
 [English](#english) | [中文](#中文)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![CrewAI](https://img.shields.io/badge/Powered%20by-CrewAI-blue)](https://crewai.com/)
-[![PlantUML](https://img.shields.io/badge/Diagrams-PlantUML-green)](https://plantuml.com/)
+[![PlantUML 1.2026](https://img.shields.io/badge/PlantUML-1.2026-green)](https://plantuml.com/)
+[![Agent Skill](https://img.shields.io/badge/Agent%20Skill-nl2bp-blueviolet)](skills/nl2bp/)
 [![CI](https://github.com/MarkfuGod/NL2BP-Natural-Language-to-UML-Blueprints/actions/workflows/ci.yml/badge.svg)](https://github.com/MarkfuGod/NL2BP-Natural-Language-to-UML-Blueprints/actions/workflows/ci.yml)
-
-**🚀 从自然语言需求到UML蓝图的AI工作流程设计**
 
 </div>
 
@@ -17,273 +15,126 @@
 
 ## English
 
-### 🎯 AI-Driven Development Workflow Design
+NL2BP turns a natural-language requirement into **requirements → architecture (C4) → a UML
+blueprint in PlantUML → code that implements it**. The model writes; deterministic checks verify:
+every diagram must pass PlantUML, the class diagrams are a contract the code is measured against,
+and generated tests run in a Docker sandbox.
 
-This project provides workflow designs and prompt templates for transforming natural language requirements into UML blueprints through AI agent collaboration. It includes two complementary approaches: single-agent role-switching and multi-agent collaboration patterns.
+### Three ways to use it
 
-#### ✨ What This Project Provides
+| | What | Best for |
+|---|---|---|
+| **[Agent Skill `nl2bp`](skills/nl2bp/)** | `SKILL.md` + references (diagram selection, output contract, PlantUML 1.2026 syntax) + `nl2bp_check.py` | Claude Code and other agents that support [Agent Skills](https://agentskills.io/) |
+| **[CrewAI runner](workflow_multi_agent/crewai_code/)** | `nl2bp multi` (5 agents) and `nl2bp single` (one agent, 7 roles), headless, any model | Batch runs, evaluation, CI |
+| **[Roo Code modes](workflow_single_agent/)** | `.roomodes` + 7 role rules | Working inside Roo Code |
 
-- 📋 **Workflow Design Templates** - Detailed process flows for AI-driven development
-- 🤖 **Agent Role Definitions** - Comprehensive prompt templates for different specialist roles
-- 📊 **UML Generation Guides** - Structured approaches to PlantUML diagram creation
-- 🔄 **Process Documentation** - Complete workflow specifications and best practices
-- 💡 **Implementation Patterns** - Both single-agent and multi-agent collaboration models
+All three share one source of truth: [`skills/nl2bp/references/`](skills/nl2bp/references/).
 
-#### 🏗️ Two Workflow Approaches
+### Quick start
 
-**Single-Agent Workflow:**
-![Single Agent Workflow](./workflow_single_agent/workflow_pic/single_agent_workflow.drawio.svg)
+**Skill (Claude Code):**
+```bash
+cp -R skills/nl2bp ~/.claude/skills/        # or <project>/.claude/skills/
+brew install plantuml                        # validation and rendering
+# then ask: "design a meeting-room booking system and give me the UML blueprint"
+```
 
-| 🎯 Single-Agent Approach | 🔄 Multi-Agent Approach |
-|:---:|:---:|
-| One AI agent switches between 7 specialized roles | 9 specialized AI agents collaborate in parallel |
-| Sequential role-based execution | Concurrent multi-agent coordination |
-| Suitable for focused, linear development | Ideal for complex, agile development |
-| [📖 Learn More](./workflow_single_agent/) | [📖 Learn More](./workflow_multi_agent/) |
-
-**Multi-Agent Workflow:**
-![Multi Agent Workflow](./workflow_multi_agent/workflow_pic/multi_agent_workflow.svg)
-
-#### 🎭 Agent Roles & Responsibilities
-
-**Single-Agent System (7 Roles):**
-- 📝 **Requirements Analyst** - Natural language to structured requirements
-- 🏗️ **System Architect** - Technical architecture design
-- 📊 **Blueprint Designer** - PlantUML diagram generation
-- 💻 **Coder** - Implementation guidance
-- 🔍 **Code Reviewer** - Quality assurance patterns
-- 🚀 **Deployer & Debugger** - Deployment and testing workflows
-- 🛠️ **Code Critic** - Problem diagnosis methodologies
-
-**Blueprint Designer Profile:**
-![Blueprint Designer Profile](./workflow_single_agent/agent_profile/BlueprintWirter_Profile.drawio.svg)
-
-**Multi-Agent System (9 Agents):**
-- 🏗️ **System Design Agent** - Architecture planning
-- 📋 **Requirement Analysis Agent** - User story creation
-- 📊 **Blueprint Design Agent** - Visual system design
-- 🎨 **Frontend Design Agent** - UI/UX patterns
-- ⚙️ **Backend Design Agent** - Server-side architecture
-- 📦 **Version Control Agent** - Code versioning strategies
-- 📈 **Agile Dashboard Agent** - Progress tracking methods
-- 🔄 **Feedback Planning Agent** - Iteration planning
-- 👤 **Human Collaborator** - User interaction patterns
-
-#### 🎨 Generated Examples Gallery
-
-**English UML Examples:**
-
-<div align="center">
-
-| System Architecture | API Sequence | Use Case Diagram |
-|:---:|:---:|:---:|
-| ![System Architecture](./UML_examples_en/system_architecture_layers/system_architecture_layers.svg) | ![API Sequence](./UML_examples_en/api_interaction_sequence/api_interaction_sequence.svg) | ![Use Case](./UML_examples_en/admin_management_usecase/admin_management_usecase.svg) |
-
-| Component Diagram | Data Flow | Authentication Flow |
-|:---:|:---:|:---:|
-| ![Component](./UML_examples_en/system_overview_component/system_overview_component.svg) | ![Data Flow](./UML_examples_en/data_flow_diagram/data_flow_diagram.svg) | ![Auth Flow](./UML_examples_en/authentication_state_machine/authentication_state_machine.svg) |
-
-</div>
-
-#### 🚀 Quick Start
-
-**For Single-Agent Workflow (Prompt Templates):**
-1. **Use Blueprint Agent Prompts**:
-   ```bash
-   cd workflow_single_agent/
-   # Use prompt templates from role_prompts/rules-blueprintdesign/
-   # Core prompt guide in agent_profile/BlueprintWriter_Profile.md
-   ```
-
-2. **Apply Prompt Templates**:
-   - Use Blueprint Agent prompt from `role_prompts/rules-blueprintdesign/`
-   - Follow formatting examples in `role_prompts/rules-blueprintdesign/`
-   - Input your requirements with the prompt template to any LLM
-
-**Run either workflow from the command line (CrewAI 1.x):**
+**Headless runner:**
 ```bash
 cd workflow_multi_agent/crewai_code
-uv sync && cp .env.example .env        # set MODEL (e.g. anthropic/claude-sonnet-5-5) and its API key
-
-# Multi-agent: 8 agents, frontend/backend in parallel, optional human review of the blueprint
-uv run nl2bp multi  --name LibrarySystem --description "Students borrow and return books" --language English --review
-
-# Single agent switching the 7 roles in role_prompts/, with a review → diagnose → fix loop
-uv run nl2bp single --name LibrarySystem --description "Students borrow and return books" --language English
-
-uv run nl2bp render output/<run>/diagrams   # .puml → .svg (needs local plantuml)
+uv sync && cp .env.example .env              # MODEL=anthropic/claude-sonnet-5-5, deepseek/deepseek-flash, ...
+uv run nl2bp multi  --name RoomBooking --description-file evals/requirements/room-booking.md --language English
+uv run nl2bp single --name RoomBooking --description-file evals/requirements/room-booking.md --language English
 ```
-Each run writes `output/<run>/` with one document per stage, every PlantUML diagram as a `.puml` file, generated code and a `manifest.json`. Details: [crewai_code/README_EN.md](./workflow_multi_agent/crewai_code/README_EN.md).
 
-**Use the role prompts in Roo Code:** copy `workflow_single_agent/.roomodes` and `role_prompts/rules-*` into your project as `.roomodes` and `.roo/rules-*`.
+### Example
 
-#### 🔥 Why Use NL2BP?
+[`examples/meeting-room-booking/`](examples/meeting-room-booking/) was produced by following the
+skill: 13 diagrams, all validated by PlantUML 1.2026, sources (`.puml`) next to the rendered SVGs.
 
-- ✅ **Complete Workflow Design** - End-to-end process templates
-- ✅ **Ready-to-Use Prompts** - Tested prompt templates for each role
-- ✅ **Flexible Architecture** - Two workflow options to choose from
-- ✅ **Professional Output** - Enterprise-grade diagram generation guides
-- ✅ **Implementation Patterns** - Both theoretical and practical approaches
+| C4 container | Booking sequence | Booking lifecycle |
+|:---:|:---:|:---:|
+| ![C4 container](examples/meeting-room-booking/diagrams/booking_c4_container.svg) | ![Sequence](examples/meeting-room-booking/diagrams/booking_sequence_book.svg) | ![State](examples/meeting-room-booking/diagrams/booking_state_booking.svg) |
+
+| Domain contract | Database schema | Use cases |
+|:---:|:---:|:---:|
+| ![Class](examples/meeting-room-booking/diagrams/booking_class_domain.svg) | ![ER](examples/meeting-room-booking/diagrams/booking_er_schema.svg) | ![Use case](examples/meeting-room-booking/diagrams/booking_usecase_overview.svg) |
+
+More in [examples/](examples/).
+
+### Measured
+
+Live runs on DeepSeek-V4.1-Flash, scored by [`evals/score.py`](workflow_multi_agent/crewai_code/evals/score.py):
+with the quality gates, blueprint conformance went from 0.656 to 1.0 and generated backend tests
+from failing to passing. Details and caveats (one requirement per arm):
+[`evals/RESULTS.md`](workflow_multi_agent/crewai_code/evals/RESULTS.md).
+
+### Repository layout
+
+```
+skills/nl2bp/                 Agent Skill: SKILL.md, references/, scripts/nl2bp_check.py
+examples/                     generated examples (.md + .puml + .svg), reproducible
+workflow_multi_agent/
+  crewai_code/                CrewAI runner (nl2bp CLI), tests, evals
+workflow_single_agent/
+  role_prompts/rules-*/       7 role specs (also loaded by `nl2bp single`)
+  .roomodes                   Roo Code modes
+```
 
 ---
 
 ## 中文
 
-### 🎯 AI驱动的开发工作流程设计
+NL2BP 把一段自然语言需求变成 **需求 → 架构（C4）→ PlantUML UML 蓝图 → 按蓝图实现的代码**。
+模型负责写，确定性检查负责验：每张图都必须通过 PlantUML 语法检查，类图是代码要对照的契约，
+生成的测试在 Docker 沙箱里实际运行。
 
-本项目提供了通过AI代理协作将自然语言需求转化为UML蓝图的工作流程设计和提示模板。包含两种互补的方法：单代理角色切换和多代理协作模式。
+### 三种用法
 
-#### ✨ 项目提供内容
+| | 内容 | 适合 |
+|---|---|---|
+| **[Agent Skill `nl2bp`](skills/nl2bp/)** | `SKILL.md` + 参考资料（选图指南、输出契约、PlantUML 1.2026 语法）+ `nl2bp_check.py` | Claude Code 及其他支持 [Agent Skills](https://agentskills.io/) 的 Agent |
+| **[CrewAI 运行器](workflow_multi_agent/crewai_code/)** | `nl2bp multi`（5 个 Agent）与 `nl2bp single`（单 Agent 7 个角色），无界面、任意模型 | 批量运行、评测、CI |
+| **[Roo Code 模式](workflow_single_agent/)** | `.roomodes` + 7 个角色规则 | 在 Roo Code 中使用 |
 
-- 📋 **工作流程设计模板** - 详细的AI驱动开发流程
-- 🤖 **代理角色定义** - 不同专业角色的完整提示模板
-- 📊 **UML生成指南** - PlantUML图表创建的结构化方法
-- 🔄 **流程文档** - 完整的工作流程规范和最佳实践
-- 💡 **实现模式** - 单代理和多代理协作模型
+三者共用同一份知识：[`skills/nl2bp/references/`](skills/nl2bp/references/)。
 
-#### 🏗️ 两种工作流程方法
+### 快速开始
 
-**单代理工作流程：**
-![单代理工作流程](./workflow_single_agent/workflow_pic/single_agent_workflow.drawio.svg)
+**Skill（Claude Code）：**
+```bash
+cp -R skills/nl2bp ~/.claude/skills/        # 或 <项目>/.claude/skills/
+brew install plantuml                        # 校验与渲染
+# 然后直接说：“设计一个会议室预订系统，给我 UML 蓝图”
+```
 
-| 🎯 单代理方法 | 🔄 多代理方法 |
-|:---:|:---:|
-| 一个AI代理切换7个专业角色 | 9个专业AI代理并行协作 |
-| 顺序式角色执行 | 并发多代理协调 |
-| 适合专注的线性开发 | 适合复杂的敏捷开发 |
-| [📖 了解更多](./workflow_single_agent/) | [📖 了解更多](./workflow_multi_agent/) |
-
-**多代理工作流程：**
-![多代理工作流程](./workflow_multi_agent/workflow_pic/multi_agent_workflow.svg)
-
-#### 🎭 代理角色与职责
-
-**单代理系统（7个角色）：**
-- 📝 **需求分析师** - 自然语言转结构化需求
-- 🏗️ **架构设计师** - 技术架构设计
-- 📊 **蓝图设计师** - PlantUML图表生成
-- 💻 **编码工程师** - 实现指导
-- 🔍 **代码审查员** - 质量保证模式
-- 🚀 **部署调试员** - 部署与测试工作流程
-- 🛠️ **代码诊断师** - 问题诊断方法论
-
-**蓝图设计师配置：**
-![蓝图设计师配置](./workflow_single_agent/agent_profile/BlueprintWirter_Profile.drawio.svg)
-
-**多代理系统（9个代理）：**
-- 🏗️ **系统设计代理** - 架构规划
-- 📋 **需求分析代理** - 用户故事创建
-- 📊 **蓝图设计代理** - 可视化系统设计
-- 🎨 **前端设计代理** - UI/UX模式
-- ⚙️ **后端设计代理** - 服务端架构
-- 📦 **版本控制代理** - 代码版本管理策略
-- 📈 **敏捷看板代理** - 进度跟踪方法
-- 🔄 **反馈规划代理** - 迭代规划
-- 👤 **人类协作者** - 用户交互模式
-
-#### 🎨 生成示例画廊
-
-**中文UML示例：**
-
-<div align="center">
-
-| 学生图书管理组件图 | MVC架构流程图 | 数据库架构图 |
-|:---:|:---:|:---:|
-| ![组件图](./UML_examples_zh/stu_lib_component_diagram.png) | ![MVC流程](./UML_examples_zh/MVC_flow.png) | ![数据库架构](./UML_examples_zh/database_schema.png) |
-
-| 学生成绩模块图 | 借阅时序图 | 类图设计 |
-|:---:|:---:|:---:|
-| ![模块图](./UML_examples_zh/stu_grade_module_diagram.png) | ![时序图](./UML_examples_zh/borrow_sequence.png) | ![类图](./UML_examples_zh/ClassDiagram.png) |
-
-</div>
-
-#### 🚀 快速开始
-
-**单代理工作流程（提示模板）：**
-1. **使用蓝图代理提示**：
-   ```bash
-   cd workflow_single_agent/
-   # 使用 role_prompts/rules-blueprintdesign/ 中的提示模板
-   # 核心提示指南在 agent_profile/BlueprintWriter_Profile.md
-   ```
-
-2. **应用提示模板**：
-   - 使用 `role_prompts/rules-blueprintdesign/` 中的蓝图代理提示
-   - 参考 `role_prompts/rules-blueprintdesign/` 中的格式示例
-   - 将您的需求和提示模板输入到任何LLM中
-
-**命令行运行两种工作流（CrewAI 1.x）：**
+**命令行运行器：**
 ```bash
 cd workflow_multi_agent/crewai_code
-uv sync && cp .env.example .env        # 填 MODEL（如 anthropic/claude-sonnet-5-5）与 API key
-
-# 多代理：8 个 Agent，前后端并行，可选人类评审蓝图
-uv run nl2bp multi  --name 图书馆系统 --description "学生借还图书，管理员管理图书" --review
-
-# 单代理：依次切换 role_prompts/ 中的 7 个角色，带 审查 → 诊断 → 修复 循环
-uv run nl2bp single --name 图书馆系统 --description "学生借还图书，管理员管理图书"
-
-uv run nl2bp render output/<run>/diagrams   # .puml → .svg（需本机 plantuml）
-```
-每次运行生成 `output/<run>/`：每个阶段一份文档、每张 PlantUML 图一个 `.puml` 文件、生成的代码和 `manifest.json`。详见 [crewai_code/README.md](./workflow_multi_agent/crewai_code/README.md)。
-
-**在 Roo Code 中使用角色提示词：** 把 `workflow_single_agent/.roomodes` 与 `role_prompts/rules-*` 复制到你的项目，分别作为 `.roomodes` 与 `.roo/rules-*`。
-
-#### 🔥 为什么使用NL2BP？
-
-- ✅ **完整工作流程设计** - 端到端流程模板
-- ✅ **即用提示模板** - 经过测试的各角色提示模板
-- ✅ **灵活架构** - 两种工作流程选择
-- ✅ **专业输出** - 企业级图表生成指南
-- ✅ **实现模式** - 理论与实践相结合的方法
-
-#### 📦 项目结构
-
-```
-NL2BP/
-├── workflow_single_agent/          # 单代理多角色系统
-│   ├── role_prompts/              # 角色提示规则（7 个角色）
-│   ├── .roomodes                  # Roo Code 自定义模式
-│   ├── agent_profile/             # 代理配置文件
-│   └── workflow_pic/              # 工作流程图
-├── workflow_multi_agent/          # 多代理协作系统
-│   ├── crewai_code/              # CrewAI 实现（nl2bp CLI，多代理 + 单代理）
-│   └── workflow_pic/              # 多代理流程图
-├── UML_examples_en/               # 英文UML示例
-├── UML_examples_zh/               # 中文UML示例
-└── README.md                      # 本文档
+uv sync && cp .env.example .env              # MODEL=anthropic/claude-sonnet-5-5、deepseek/deepseek-flash 等
+uv run nl2bp multi  --name 会议室预订 --description-file evals/requirements/room-booking.md
+uv run nl2bp single --name 会议室预订 --description-file evals/requirements/room-booking.md
 ```
 
-#### 🌟 核心特点
+### 示例
 
-**项目优势：**
-- 🚀 **结构化方法** - 系统化的开发流程设计
-- 🎯 **实用模板** - 可直接使用的提示模板
-- 📊 **可视化指导** - 专业UML图表生成方法
-- 🔄 **敏捷支持** - 迭代开发流程设计
+[`examples/meeting-room-booking/`](examples/meeting-room-booking/) 按 skill 流程生成：13 张图全部通过
+PlantUML 1.2026 校验，`.puml` 源文件与渲染后的 SVG 放在一起（图见上方英文部分）。更多见 [examples/](examples/)。
 
-**设计创新点：**
-- 🧠 **智能角色设计** - 单代理多专业能力模板
-- 🤝 **多代理协作模式** - 并行处理复杂任务的框架
-- 📈 **流程监控设计** - 全程进度跟踪方法
-- 🔧 **版本管理模式** - 智能代码版本控制策略
+### 实测
 
-#### 📋 使用说明
+DeepSeek-V4.1-Flash 实测、[`evals/score.py`](workflow_multi_agent/crewai_code/evals/score.py) 独立评分：
+加入质量闸门后，蓝图契约符合度从 0.656 提升到 1.0，生成的后端测试从失败变为通过。
+细节与局限（每组只有一个需求）：[`evals/RESULTS.md`](workflow_multi_agent/crewai_code/evals/RESULTS.md)。
 
-本项目主要提供：
-- **工作流程设计**：详细的开发流程规范和最佳实践
-- **提示模板**：各角色的专业提示词模板，可直接用于任何LLM
-- **实现参考**：CrewAI框架下的多代理协作实现模式
-- **示例展示**：生成的UML图表示例和格式规范
+### 目录
 
-**说明**：单代理工作流的提示模板可以直接用于任何 LLM 或 Roo Code；`nl2bp single` 提供了基于 CrewAI 的可执行版本。
-
----
-
-<div align="center">
-
-### 🚀 用AI重新设计软件开发流程！
-
-**[单代理工作流程](./workflow_single_agent/) | [多代理工作流程](./workflow_multi_agent/) | [示例画廊](#示例画廊)**
-
-</div>
+```
+skills/nl2bp/                 Agent Skill：SKILL.md、references/、scripts/nl2bp_check.py
+examples/                     生成的示例（.md + .puml + .svg），可复现
+workflow_multi_agent/
+  crewai_code/                CrewAI 运行器（nl2bp 命令）、测试、评测
+workflow_single_agent/
+  role_prompts/rules-*/       7 个角色规格（nl2bp single 也加载它们）
+  .roomodes                   Roo Code 模式
+```

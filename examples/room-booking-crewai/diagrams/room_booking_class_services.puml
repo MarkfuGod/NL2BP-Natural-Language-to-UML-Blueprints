@@ -1,0 +1,99 @@
+@startuml room_booking_class_services
+hide circle
+package services {
+  class AuthPrincipal {
+    +user_id: str
+    +display_name: str
+    +roles: set[Role]
+    +is_admin(): bool
+    +has_role(role: Role): bool
+  }
+
+  interface TokenVerifier {
+    +verify(token: str) -> AuthPrincipal
+  }
+
+  class OverlapPolicy {
+    +overlaps(a: TimeInterval, b: TimeInterval): bool
+  }
+
+  class BookingRules {
+    +MIN_DURATION_MINUTES: int = 15
+    +MAX_DURATION_MINUTES: int = 240
+    +BOOKING_WINDOW_DAYS: int = 30
+    +validate_create(interval: TimeInterval, date: date, now: datetime): None
+    +validate_search(date: date, interval: TimeInterval): None
+    +validate_check_in(booking: Booking, principal: AuthPrincipal, now: datetime): None
+    +validate_cancel(booking: Booking, principal: AuthPrincipal, now: datetime): None
+    +validate_room(name: str, floor: str, capacity: int): None
+    +validate_maintenance(interval: TimeInterval, now: datetime): None
+    +validate_report_range(from_date: date, to_date: date): None
+  }
+
+  class BookingService {
+    +search_available(date: date, interval: TimeInterval, attendees: int, equipment: set[Equipment], page: int, size: int) -> RoomPage
+    +create_booking(principal: AuthPrincipal, room_id: UUID, date: date, interval: TimeInterval, attendees: int, title: str, now: datetime) -> Booking
+    +check_in(principal: AuthPrincipal, booking_id: UUID, now: datetime) -> Booking
+    +cancel(principal: AuthPrincipal, booking_id: UUID, now: datetime) -> Booking
+    +list_mine(principal: AuthPrincipal, from_date: date, to_date: date, status: BookingStatus | None) -> list[Booking]
+  }
+
+  class RoomAdminService {
+    +create_room(principal: AuthPrincipal, name: str, floor: str, capacity: int, equipment: set[Equipment]) -> Room
+    +update_room(principal: AuthPrincipal, room_id: UUID, name: str | None, floor: str | None, capacity: int | None, equipment: set[Equipment] | None) -> Room
+    +delete_room(principal: AuthPrincipal, room_id: UUID, now: datetime) -> None
+  }
+
+  class MaintenanceService {
+    +create_window(principal: AuthPrincipal, room_id: UUID, interval: TimeInterval, reason: str, force: bool, now: datetime) -> MaintenanceWindow
+  }
+
+  class ReportService {
+    +utilization(from_date: date, to_date: date, group_by: ReportGroupBy) -> list[UtilizationReport]
+  }
+
+  class AdminBookingService {
+    +list_by_date(on_date: date) -> list[Booking]
+  }
+
+  class AuditService {
+    +record(actor_id: str, action: AuditAction, entity_type: AuditEntityType, entity_id: UUID, before_state: dict[str, Any] | None, after_state: dict[str, Any] | None) -> None
+  }
+
+  interface BookingNotifier {
+    +notify_released(booking_id: UUID, reason: CancelReason, released_at: datetime) -> None
+  }
+
+  class LoggingNotifier {
+    +notify_released(booking_id: UUID, reason: CancelReason, released_at: datetime) -> None
+  }
+
+  class SchedulerResult {
+    +released_count: int
+    +completed_count: int
+    +lag_seconds: float
+  }
+
+  class Scheduler {
+    +run_once(now: datetime) -> SchedulerResult
+    +run_forever() -> None
+  }
+}
+AuthPrincipal --> Role
+BookingService ..> BookingRules
+BookingService ..> UnitOfWork
+RoomAdminService ..> BookingRules
+RoomAdminService ..> UnitOfWork
+RoomAdminService ..> AuditService
+MaintenanceService ..> BookingRules
+MaintenanceService ..> UnitOfWork
+MaintenanceService ..> AuditService
+ReportService ..> BookingRules
+ReportService ..> UnitOfWork
+AdminBookingService ..> UnitOfWork
+Scheduler ..> UnitOfWork
+Scheduler ..> AuditService
+Scheduler ..> BookingNotifier
+LoggingNotifier ..|> BookingNotifier
+BookingRules ..> OverlapPolicy
+@enduml

@@ -1,0 +1,42 @@
+@startuml room_booking_activity_create_booking
+|Employee|
+start
+:选择日期、时段、人数、所需设备;
+|System|
+:校验令牌与角色;
+if (日期在 [今天, 今天+30天] 内?) then (否)
+  :拒绝 BOOKING_WINDOW_EXCEEDED (400); <<output>>
+  stop
+elseif (15分钟 <= 时长 <= 240分钟 且 按15分钟对齐?) then (否)
+  :拒绝 INVALID_DURATION (400); <<output>>
+  stop
+elseif (时段落在 07:00-22:00 且 start_at > now?) then (否)
+  :拒绝 OUT_OF_BUSINESS_HOURS (400); <<output>>
+  stop
+else (是)
+  :查询 capacity>=attendees 且 设备齐全 的 ACTIVE 会议室;
+endif
+|Employee|
+:从结果中选择会议室并提交预订;
+|System|
+:开启事务, 对 room_id 加行级排他锁;
+:检测重叠: RESERVED/CHECKED_IN 预订 与 ACTIVE 维护时段;
+if (存在重叠?) then (是)
+  :回滚事务;
+  :拒绝 ROOM_SLOT_CONFLICT (409); <<output>>
+  stop
+else (否)
+  fork
+    :插入 booking (status=RESERVED, bookedBy=sub);
+  fork again
+    :计算 checkInDeadline = start_at + 15分钟;
+  fork again
+    :写审计日志;
+  end fork
+  :提交事务;
+  :返回 201 Created;
+endif
+|Employee|
+:看到"请在 HH:mm 前签到";
+stop
+@enduml

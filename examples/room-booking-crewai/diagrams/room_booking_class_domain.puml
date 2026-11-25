@@ -1,0 +1,147 @@
+@startuml room_booking_class_domain
+hide circle
+package domain {
+  enum Role {
+    EMPLOYEE
+    ADMIN
+  }
+
+  enum Equipment {
+    PROJECTOR
+    VIDEO_CONFERENCE
+  }
+
+  enum RoomStatus {
+    ACTIVE
+    INACTIVE
+    DELETED
+  }
+
+  enum BookingStatus {
+    RESERVED
+    CHECKED_IN
+    COMPLETED
+    CANCELLED
+    RELEASED
+  }
+
+  enum CancelReason {
+    EMPLOYEE
+    MAINTENANCE
+    NO_SHOW
+  }
+
+  enum MaintenanceStatus {
+    ACTIVE
+  }
+
+  enum ReportGroupBy {
+    ROOM
+  }
+
+  enum AuditAction {
+    ROOM_CREATED
+    ROOM_UPDATED
+    ROOM_DELETED
+    MAINTENANCE_CREATED
+    BOOKING_CANCELLED_BY_MAINTENANCE
+    BOOKING_AUTO_RELEASED
+  }
+
+  enum AuditEntityType {
+    ROOM
+    BOOKING
+    MAINTENANCE_WINDOW
+  }
+
+  class TimeInterval {
+    +start_at: datetime
+    +end_at: datetime
+    +duration_minutes(): int
+    +overlaps(other: TimeInterval): bool
+    +is_aligned_to_15_minutes(): bool
+    +is_within_business_hours(): bool
+  }
+
+  class Room {
+    +id: UUID
+    +name: str
+    +floor: str
+    +capacity: int
+    +equipment: set[Equipment]
+    +status: RoomStatus
+    +is_bookable(): bool
+    +has_all_equipment(required: set[Equipment]): bool
+  }
+
+  class Booking {
+    +id: UUID
+    +room_id: UUID
+    +booked_by: str
+    +start_at: datetime
+    +end_at: datetime
+    +attendees: int
+    +title: str
+    +status: BookingStatus
+    +checked_in_at: datetime | None
+    +cancel_reason: CancelReason | None
+    +released_at: datetime | None
+    +created_at: datetime
+    +updated_at: datetime
+    +interval(): TimeInterval
+    +check_in_deadline(): datetime
+    +duration_minutes(): int
+    +is_active(): bool
+    +is_owner(user_id: str): bool
+    +check_in(now: datetime): None
+    +cancel(reason: CancelReason, now: datetime): None
+    +release_no_show(now: datetime): None
+    +complete(now: datetime): None
+  }
+
+  class MaintenanceWindow {
+    +id: UUID
+    +room_id: UUID
+    +start_at: datetime
+    +end_at: datetime
+    +reason: str
+    +status: MaintenanceStatus
+    +created_by: str
+    +created_at: datetime
+    +interval(): TimeInterval
+    +is_active(): bool
+    +overlaps(other: TimeInterval): bool
+  }
+
+  class AuditLog {
+    +id: UUID
+    +actor_id: str
+    +action: AuditAction
+    +entity_type: AuditEntityType
+    +entity_id: UUID
+    +before_state: dict[str, Any] | None
+    +after_state: dict[str, Any] | None
+    +created_at: datetime
+  }
+
+  class UtilizationReport {
+    +room_id: UUID
+    +room_name: str
+    +available_minutes: int
+    +booked_minutes: int
+    +used_minutes: int
+    +booking_rate: Decimal
+    +utilization_rate: Decimal
+  }
+}
+Room "1" -- "0..*" Booking : hosts
+Room "1" -- "0..*" MaintenanceWindow : has
+Room "1" -- "0..*" UtilizationReport : reported in
+Room "1" -- "0..*" Equipment : requires
+Booking --> BookingStatus
+Booking --> CancelReason
+Room --> RoomStatus
+MaintenanceWindow --> MaintenanceStatus
+AuditLog --> AuditAction
+AuditLog --> AuditEntityType
+@enduml

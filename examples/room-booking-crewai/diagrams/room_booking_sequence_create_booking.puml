@@ -1,0 +1,58 @@
+@startuml room_booking_sequence_create_booking
+autonumber
+actor Employee
+participant "web (React SPA)" as Web
+participant "api (FastAPI)" as API
+participant "BookingService" as BS
+participant "BookingRules" as Rules
+participant "UnitOfWork" as UoW
+database "PostgreSQL" as DB
+Employee -> Web : choose room and submit booking
+Web -> API : POST /api/v1/bookings
+API -> BS : create_booking(principal, room_id, date, interval, attendees, title, now)
+BS -> Rules : validate_create(interval, date, now)
+alt validation fails
+  Rules --> BS : INVALID_DURATION or BOOKING_WINDOW_EXCEEDED or OUT_OF_BUSINESS_HOURS or START_IN_PAST
+  BS --> API : validation error
+  API --> Web : 400 ErrorResponse
+else validation passes
+  BS -> UoW : begin()
+  BS -> UoW : rooms.get_for_update(room_id)
+  UoW -> DB : SELECT room FOR UPDATE
+  DB --> UoW : room
+  UoW --> BS : room
+  alt room missing or not ACTIVE
+    BS -> UoW : rollback()
+    BS --> API : room not bookable
+    API --> Web : 400 or 404 ErrorResponse
+  else room bookable
+    BS -> UoW : bookings.list_active_overlapping(room_id, interval)
+    UoW -> DB : SELECT RESERVED or CHECKED_IN bookings overlapping
+    DB --> UoW : bookings
+    BS -> UoW : maintenance.list_active_overlapping(room_id, interval)
+    UoW -> DB : SELECT ACTIVE maintenance overlapping
+    DB --> UoW : maintenance
+    BS -> Rules : has_overlap(bookings, maintenance, interval)
+    Rules --> BS : bool
+    alt overlap exists
+      BS -> UoW : rollback()
+      BS --> API : ROOM_SLOT_CONFLICT
+      API --> Web : 409 ErrorResponse
+    else no overlap
+      BS -> UoW : bookings.insert(booking)
+      BS -> UoW : commit()
+      UoW -> DB : INSERT booking and enforce GiST exclusion constraint
+      alt exclusion violation
+        UoW --> BS : IntegrityError
+        BS -> UoW : rollback()
+        BS --> API : ROOM_SLOT_CONFLICT
+        API --> Web : 409 ErrorResponse
+      else commit succeeds
+        UoW --> BS : booking
+        BS --> API : booking
+        API --> Web : 201 BookingResponse
+      end
+    end
+  end
+end
+@enduml

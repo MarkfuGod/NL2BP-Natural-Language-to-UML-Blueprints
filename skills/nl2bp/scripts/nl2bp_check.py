@@ -183,7 +183,8 @@ def docker_ok() -> bool:
 def run_tests(project: Path, use_docker: bool = True, timeout: int = 600) -> dict:
     detected = test_command(project)
     if not detected:
-        return {"status": "skipped", "reason": "no requirements.txt / pyproject.toml / package.json"}
+        reason = "no requirements.txt / pyproject.toml / package.json"
+        return {"status": "skipped", "reason": reason}
     image, command = detected
     if use_docker and not docker_ok():
         return {"status": "skipped", "reason": "docker daemon not available (use --no-docker)"}

@@ -1,0 +1,67 @@
+@startuml room_booking_class_persistence
+hide circle
+package persistence {
+  interface UnitOfWork {
+    +rooms: RoomRepository
+    +bookings: BookingRepository
+    +maintenance: MaintenanceRepository
+    +audits: AuditRepository
+    +commit(): None
+    +rollback(): None
+  }
+
+  interface RoomRepository {
+    +get(room_id: UUID) -> Room | None
+    +get_for_update(room_id: UUID) -> Room | None
+    +find_by_name(name: str) -> Room | None
+    +list_available(date: date, interval: TimeInterval, attendees: int, equipment: set[Equipment], page: int, size: int) -> list[Room]
+    +add(room: Room) -> None
+    +save(room: Room) -> None
+    +has_future_active_bookings(room_id: UUID, now: datetime) -> bool
+    +list_future_active_bookings(room_id: UUID, now: datetime) -> list[Booking]
+  }
+
+  interface BookingRepository {
+    +get(booking_id: UUID) -> Booking | None
+    +get_for_update(booking_id: UUID) -> Booking | None
+    +insert(booking: Booking) -> None
+    +save(booking: Booking) -> None
+    +list_active_overlapping(room_id: UUID, interval: TimeInterval) -> list[Booking]
+    +list_mine(user_id: str, from_date: date, to_date: date, status: BookingStatus | None) -> list[Booking]
+    +list_by_date(on_date: date) -> list[Booking]
+    +list_reserved_candidates(now: datetime, limit: int) -> list[Booking]
+    +list_completion_candidates(now: datetime, limit: int) -> list[Booking]
+  }
+
+  interface MaintenanceRepository {
+    +list_active_overlapping(room_id: UUID, interval: TimeInterval) -> list[MaintenanceWindow]
+    +add(window: MaintenanceWindow) -> None
+    +list_active_in_range(room_id: UUID, from_at: datetime, to_at: datetime) -> list[MaintenanceWindow]
+  }
+
+  interface AuditRepository {
+    +add(log: AuditLog) -> None
+    +delete_older_than(cutoff: datetime) -> int
+  }
+
+  class SqlAlchemyUnitOfWork {
+  }
+
+  class SqlAlchemyRoomRepository {
+  }
+
+  class SqlAlchemyBookingRepository {
+  }
+
+  class SqlAlchemyMaintenanceRepository {
+  }
+
+  class SqlAlchemyAuditRepository {
+  }
+}
+UnitOfWork <|.. SqlAlchemyUnitOfWork
+RoomRepository <|.. SqlAlchemyRoomRepository
+BookingRepository <|.. SqlAlchemyBookingRepository
+MaintenanceRepository <|.. SqlAlchemyMaintenanceRepository
+AuditRepository <|.. SqlAlchemyAuditRepository
+@enduml

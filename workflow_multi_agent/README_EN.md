@@ -1,5 +1,23 @@
 # Multi-Agent Collaborative Development Workflow
 
+> **2026 implementation (read this first)**
+>
+> The sections from "System Architecture" to "Usage Guide" below are the original 2025 design:
+> nine agents modelled on an agile team. The current implementation in
+> [`crewai_code/`](crewai_code/) was trimmed on the evidence:
+>
+> - **5 agents**: requirements → architecture (C4) → blueprint → frontend ∥ backend.
+> - **Version control, dashboard and feedback planning are no longer agents**; code produces them.
+>   The run directory is a real git repo with one commit per stage; `project_status.md` combines
+>   the real history with measured quality signals; the human collaborator ($H$) reviews the
+>   blueprint with `--review`. Reason: those three agents had no real signals and could only
+>   restate or invent status, while every measured gain came from deterministic checks
+>   ([evals/RESULTS.md](crewai_code/evals/RESULTS.md)).
+> - **Quality gates**: PlantUML syntax check and repair, blueprint conformance, generated tests run
+>   in Docker.
+> - Diagram selection, output contract and PlantUML syntax live in
+>   [`skills/nl2bp/references/`](../skills/nl2bp/references/).
+
 ## 📋 Overview
 
 This directory contains a multi-agent collaborative agile software development workflow system. The system achieves a complete development lifecycle from user requirements to product delivery through message exchange and collaboration between multiple specialized agents, building a continuous evolution agile development loop.
@@ -189,136 +207,16 @@ workflow_multi_agent/
 - Manage version history through $A_{vc}$
 - Analyze feedback and plan iterations through $A_{fp}$
 
-## 🤖 CrewAI Implementation Guide
+## 🤖 CrewAI implementation
 
-### About CrewAI
-
-CrewAI is a powerful multi-agent collaboration framework specifically designed for building and managing complex AI agent teams. This project uses CrewAI to implement the multi-agent collaborative development workflow.
-
-### Running this project's implementation
-
-`crewai_code/` is a runnable implementation (CrewAI 1.x, Python 3.10–3.13):
+How to run it, the stage graph, quality gates and output layout:
+[crewai_code/README_EN.md](crewai_code/README_EN.md).
 
 ```bash
 cd workflow_multi_agent/crewai_code
 uv sync && cp .env.example .env     # set MODEL and the API key
-uv run nl2bp multi --name LibrarySystem --description "Students borrow and return books" --language English --review
+uv run nl2bp multi --name RoomBooking --description-file evals/requirements/room-booking.md --language English --review
 ```
-
-Stage graph, output layout and configuration: [crewai_code/README_EN.md](crewai_code/README_EN.md). The code below illustrates CrewAI's basic concepts.
-
-### Quick Start
-
-#### Basic Concepts
-
-- **Agent**: AI entity with specific roles and skills
-- **Task**: Specific work that needs to be completed
-- **Crew**: Collaborative team composed of multiple agents
-- **Process**: Order and method of task execution
-
-#### Creating Agent Examples
-
-```python
-from crewai import Agent, Task, Crew
-
-# Create Requirements Analysis Agent
-requirements_agent = Agent(
-    role='Requirements Analyst',
-    goal='Analyze and refine user requirements, create prioritized requirement lists',
-    backstory='You are an experienced requirements analyst skilled at converting vague user requirements into clear functional specifications.',
-    verbose=True
-)
-
-# Create System Design Agent
-system_design_agent = Agent(
-    role='System Architect',
-    goal='Design system architecture and technical solutions',
-    backstory='You are a senior system architect capable of designing scalable and maintainable system architectures.',
-    verbose=True
-)
-```
-
-#### Defining Tasks
-
-```python
-# Requirements Analysis Task
-requirements_task = Task(
-    description='Analyze user requirements and generate structured requirement documents',
-    agent=requirements_agent
-)
-
-# System Design Task
-design_task = Task(
-    description='Design system architecture based on requirement documents',
-    agent=system_design_agent
-)
-```
-
-#### Creating Teams
-
-```python
-# Create Development Team
-dev_crew = Crew(
-    agents=[requirements_agent, system_design_agent],
-    tasks=[requirements_task, design_task],
-    verbose=2
-)
-
-# Execute Workflow
-result = dev_crew.kickoff()
-```
-
-### Advanced Features
-
-#### 1. Custom Tool Integration
-
-```python
-from crewai_tools import SerperDevTool, WebsiteSearchTool
-
-# Add tools to agents
-search_tool = SerperDevTool()
-web_tool = WebsiteSearchTool()
-
-agent_with_tools = Agent(
-    role='Research Specialist',
-    tools=[search_tool, web_tool],
-    # ... other configurations
-)
-```
-
-#### 2. Memory and Context Management
-
-```python
-crew = Crew(
-    agents=[agent1, agent2],
-    tasks=[task1, task2],
-    memory=True,  # Enable team memory
-    verbose=2
-)
-```
-
-#### 3. Collaboration Process Control
-
-```python
-from crewai import Process
-
-crew = Crew(
-    agents=[agent1, agent2, agent3],
-    tasks=[task1, task2, task3],
-    process=Process.sequential,  # or Process.hierarchical
-    verbose=2
-)
-```
-
-### Project Integration
-
-The `crewai_code/` directory in this project contains complete CrewAI implementation code, demonstrating how to integrate the above 9 agents into a collaborative system.
-
-### Learning Resources
-
-- **Official Documentation**: [https://docs.crewai.com/introduction](https://docs.crewai.com/introduction)
-- **GitHub Repository**: [https://github.com/crewAIInc/crewAI](https://github.com/crewAIInc/crewAI)
-- **Example Projects**: [CrewAI Examples](https://github.com/crewAIInc/crewAI-examples)
 
 ## 🔗 Related Resources
 

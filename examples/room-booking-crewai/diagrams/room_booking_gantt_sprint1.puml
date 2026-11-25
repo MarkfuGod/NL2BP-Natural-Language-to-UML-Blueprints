@@ -1,0 +1,43 @@
+@startgantt room_booking_gantt_sprint1
+Project starts 2026-03-02
+saturday are closed
+sunday are closed
+
+[T-01 工程骨架与数据库Schema] starts 2026-03-02
+[T-01 工程骨架与数据库Schema] requires 1 day
+
+[SB-01 US-1 登录与鉴权] starts 2026-03-02
+[SB-01 US-1 登录与鉴权] requires 2 days
+
+[SB-08 US-8 会议室增删改] starts 2026-03-04
+[SB-08 US-8 会议室增删改] requires 2 days
+
+[SB-02 US-2 可用会议室搜索] starts 2026-03-04
+[SB-02 US-2 可用会议室搜索] requires 3 days
+
+[SB-03 US-3 创建预订与并发唯一性] starts 2026-03-06
+[SB-03 US-3 创建预订与并发唯一性] requires 4 days
+
+[SB-05 US-5 未签到自动释放] starts 2026-03-06
+[SB-05 US-5 未签到自动释放] requires 3 days
+
+[SB-07 US-7 查看我的预订] starts 2026-03-09
+[SB-07 US-7 查看我的预订] requires 1 day
+
+[SB-06 US-6 取消预订] starts 2026-03-10
+[SB-06 US-6 取消预订] requires 1 day
+
+[SB-04 US-4 签到] starts 2026-03-11
+[SB-04 US-4 签到] requires 2 days
+
+[SB-09 US-11 网页端全流程] starts 2026-03-05
+[SB-09 US-11 网页端全流程] requires 6 days
+
+[T-02 并发幂等与越权测试套件] starts 2026-03-09
+[T-02 并发幂等与越权测试套件] requires 4 days
+
+[T-03 回归与验收演示] starts 2026-03-13
+[T-03 回归与验收演示] requires 1 day
+
+[Sprint Review] happens at 2026-03-13
+@endgantt

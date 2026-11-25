@@ -1,0 +1,9 @@
+@startuml room_booking_state_room
+hide empty description
+[*] --> ACTIVE : create room
+ACTIVE --> INACTIVE : deactivate
+INACTIVE --> ACTIVE : activate
+ACTIVE --> DELETED : delete when no future active bookings
+INACTIVE --> DELETED : delete when no future active bookings
+DELETED --> [*]
+@enduml

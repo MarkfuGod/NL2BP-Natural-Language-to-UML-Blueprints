@@ -1,0 +1,24 @@
+@startuml room_booking_sequence_utilization_report
+autonumber
+actor Admin
+participant "web (React SPA)" as Web
+participant "api (FastAPI)" as API
+participant "ReportService" as Report
+participant "BookingRules" as Rules
+database "PostgreSQL" as DB
+Admin -> Web : open utilization report
+Web -> API : GET /api/v1/admin/reports/utilization
+API -> API : require_admin(principal)
+API -> Report : utilization(from_date, to_date, group_by)
+Report -> Rules : validate_report_range(from_date, to_date)
+alt invalid range
+  Rules --> Report : INVALID_DATE_RANGE or REPORT_RANGE_TOO_LARGE
+  Report --> API : validation error
+  API --> Web : 400 ErrorResponse
+else valid range
+  Report -> DB : aggregate available, booked and used minutes per room
+  DB --> Report : rows
+  Report --> API : list of UtilizationReport
+  API --> Web : 200 UtilizationReportResponse
+end
+@enduml

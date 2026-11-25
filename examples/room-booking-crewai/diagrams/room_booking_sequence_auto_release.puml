@@ -1,0 +1,34 @@
+@startuml room_booking_sequence_auto_release
+autonumber
+participant "scheduler (app/scheduler.py)" as S
+participant "BookingNotifier" as Notifier
+participant "UnitOfWork" as UoW
+database "PostgreSQL" as DB
+S -> DB : pg_try_advisory_lock(scheduler_key)
+alt lock not acquired
+  S -> S : end this round
+else lock acquired
+  S -> UoW : bookings.list_reserved_candidates(now, batch_size)
+  UoW -> DB : SELECT RESERVED bookings with checked_in_at IS NULL and start_at <= now
+  DB --> UoW : candidates
+  loop each candidate
+    alt now is at or after startAt plus 15 minutes
+      S -> UoW : bookings.release_no_show(booking_id, now)
+      UoW -> DB : UPDATE to RELEASED, NO_SHOW, released_at WHERE id and status RESERVED
+      DB --> UoW : rowcount
+      alt rowcount is 1
+        S -> UoW : audits.add(BOOKING_AUTO_RELEASED)
+        S -> UoW : commit()
+        S -> Notifier : notify_released(booking_id, NO_SHOW, now)
+      else rowcount is 0
+        S -> S : skip duplicate state change and audit
+      end
+    else still inside check-in window
+      S -> S : keep RESERVED
+    end
+  end
+  S -> UoW : bookings.list_completion_candidates(now, batch_size)
+  UoW -> DB : UPDATE RESERVED or CHECKED_IN to COMPLETED where end_at <= now
+  S -> DB : pg_advisory_unlock(scheduler_key)
+end
+@enduml
