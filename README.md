@@ -7,6 +7,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![CrewAI](https://img.shields.io/badge/Powered%20by-CrewAI-blue)](https://crewai.com/)
 [![PlantUML](https://img.shields.io/badge/Diagrams-PlantUML-green)](https://plantuml.com/)
+[![CI](https://github.com/MarkfuGod/NL2BP-Natural-Language-to-UML-Blueprints/actions/workflows/ci.yml/badge.svg)](https://github.com/MarkfuGod/NL2BP-Natural-Language-to-UML-Blueprints/actions/workflows/ci.yml)
 
 **🚀 从自然语言需求到UML蓝图的AI工作流程设计**
 
@@ -99,18 +100,22 @@ This project provides workflow designs and prompt templates for transforming nat
    - Follow formatting examples in `role_prompts/rules-blueprintdesign/`
    - Input your requirements with the prompt template to any LLM
 
-**For Multi-Agent Workflow (CrewAI Framework):**
-1. **Install CrewAI**:
-   ```bash
-   pip install crewai
-   ```
+**Run either workflow from the command line (CrewAI 1.x):**
+```bash
+cd workflow_multi_agent/crewai_code
+uv sync && cp .env.example .env        # set MODEL (e.g. anthropic/claude-sonnet-5-5) and its API key
 
-2. **Use Our Implementation Pattern**:
-   ```bash
-   # Reference our CrewAI implementation structure
-   cd workflow_multi_agent/crewai_code/
-   # Adapt the agent definitions and workflow patterns
-   ```
+# Multi-agent: 8 agents, frontend/backend in parallel, optional human review of the blueprint
+uv run nl2bp multi  --name LibrarySystem --description "Students borrow and return books" --language English --review
+
+# Single agent switching the 7 roles in role_prompts/, with a review → diagnose → fix loop
+uv run nl2bp single --name LibrarySystem --description "Students borrow and return books" --language English
+
+uv run nl2bp render output/<run>/diagrams   # .puml → .svg (needs local plantuml)
+```
+Each run writes `output/<run>/` with one document per stage, every PlantUML diagram as a `.puml` file, generated code and a `manifest.json`. Details: [crewai_code/README_EN.md](./workflow_multi_agent/crewai_code/README_EN.md).
+
+**Use the role prompts in Roo Code:** copy `workflow_single_agent/.roomodes` and `role_prompts/rules-*` into your project as `.roomodes` and `.roo/rules-*`.
 
 #### 🔥 Why Use NL2BP?
 
@@ -207,18 +212,22 @@ This project provides workflow designs and prompt templates for transforming nat
    - 参考 `role_prompts/rules-blueprintdesign/` 中的格式示例
    - 将您的需求和提示模板输入到任何LLM中
 
-**多代理工作流程（CrewAI框架）：**
-1. **安装CrewAI**：
-   ```bash
-   pip install crewai
-   ```
+**命令行运行两种工作流（CrewAI 1.x）：**
+```bash
+cd workflow_multi_agent/crewai_code
+uv sync && cp .env.example .env        # 填 MODEL（如 anthropic/claude-sonnet-5-5）与 API key
 
-2. **使用我们的实现模式**：
-   ```bash
-   # 参考我们的CrewAI实现结构
-   cd workflow_multi_agent/crewai_code/
-   # 适配代理定义和工作流程模式
-   ```
+# 多代理：8 个 Agent，前后端并行，可选人类评审蓝图
+uv run nl2bp multi  --name 图书馆系统 --description "学生借还图书，管理员管理图书" --review
+
+# 单代理：依次切换 role_prompts/ 中的 7 个角色，带 审查 → 诊断 → 修复 循环
+uv run nl2bp single --name 图书馆系统 --description "学生借还图书，管理员管理图书"
+
+uv run nl2bp render output/<run>/diagrams   # .puml → .svg（需本机 plantuml）
+```
+每次运行生成 `output/<run>/`：每个阶段一份文档、每张 PlantUML 图一个 `.puml` 文件、生成的代码和 `manifest.json`。详见 [crewai_code/README.md](./workflow_multi_agent/crewai_code/README.md)。
+
+**在 Roo Code 中使用角色提示词：** 把 `workflow_single_agent/.roomodes` 与 `role_prompts/rules-*` 复制到你的项目，分别作为 `.roomodes` 与 `.roo/rules-*`。
 
 #### 🔥 为什么使用NL2BP？
 
@@ -233,11 +242,12 @@ This project provides workflow designs and prompt templates for transforming nat
 ```
 NL2BP/
 ├── workflow_single_agent/          # 单代理多角色系统
-│   ├── role_prompts/              # 角色提示规则
+│   ├── role_prompts/              # 角色提示规则（7 个角色）
+│   ├── .roomodes                  # Roo Code 自定义模式
 │   ├── agent_profile/             # 代理配置文件
 │   └── workflow_pic/              # 工作流程图
 ├── workflow_multi_agent/          # 多代理协作系统
-│   ├── crewai_code/              # CrewAI实现模式
+│   ├── crewai_code/              # CrewAI 实现（nl2bp CLI，多代理 + 单代理）
 │   └── workflow_pic/              # 多代理流程图
 ├── UML_examples_en/               # 英文UML示例
 ├── UML_examples_zh/               # 中文UML示例
@@ -266,7 +276,7 @@ NL2BP/
 - **实现参考**：CrewAI框架下的多代理协作实现模式
 - **示例展示**：生成的UML图表示例和格式规范
 
-**注意**：本项目单agent工作流重点在于提供工作流程设计和提示模板，而非完整的可执行代码实现。用户可以根据提供的模板和流程设计，结合自己的技术栈进行具体实现。
+**说明**：单代理工作流的提示模板可以直接用于任何 LLM 或 Roo Code；`nl2bp single` 提供了基于 CrewAI 的可执行版本。
 
 ---
 

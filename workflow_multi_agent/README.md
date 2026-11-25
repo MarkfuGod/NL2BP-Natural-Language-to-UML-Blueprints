@@ -194,21 +194,17 @@ workflow_multi_agent/
 
 CrewAI 是一个强大的多代理协作框架，专门用于构建和管理复杂的AI代理团队。本项目使用 CrewAI 来实现多代理协作开发工作流程。
 
-### 安装和设置
+### 运行本项目的实现
 
-#### 1. 安装 CrewAI
-
-```bash
-pip install crewai
-```
-
-#### 2. 从源码安装（开发版本）
+`crewai_code/` 是可直接运行的实现（CrewAI 1.x，Python 3.10–3.13）：
 
 ```bash
-git clone https://github.com/crewAIInc/crewAI.git
-cd crewAI
-pip install -e .
+cd workflow_multi_agent/crewai_code
+uv sync && cp .env.example .env     # 填 MODEL 与 API key
+uv run nl2bp multi --name 图书馆系统 --description "学生借还图书，管理员管理图书" --review
 ```
+
+阶段图、输出目录与配置见 [crewai_code/README.md](crewai_code/README.md)。下文是 CrewAI 基本概念的示意代码。
 
 ### 快速开始
 

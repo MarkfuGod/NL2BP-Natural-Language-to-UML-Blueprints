@@ -1,383 +1,128 @@
-from crewai import Agent, Crew, Process, Task
-from crewai.project import CrewBase, agent, crew, task, before_kickoff, after_kickoff
-from crewai.agents.agent_builder.base_agent import BaseAgent
-from typing import List, Dict, Any
-import os
+"""Builds and runs one workflow stage as a one-agent, one-task crew."""
 
-from agileworkflow.tools.file_writer_tool import FileWriterTool
+from __future__ import annotations
 
-@CrewBase
+from collections.abc import Mapping
+from dataclasses import dataclass, field
+from functools import cached_property
+from pathlib import Path
+from typing import Any, Protocol
+
+import yaml
+
+from agileworkflow.settings import Settings
+from agileworkflow.templating import placeholders, render
+from agileworkflow.workspace import Workspace
+
+HERE = Path(__file__).parent
+CONFIG_DIR = HERE / "config"
+
+# Tools per stage; stages not listed get none.
+STAGE_TOOLS: dict[str, tuple[str, ...]] = {
+    "frontend_design": ("write_file",),
+    "backend_design": ("write_file",),
+    "conformance_fix": ("write_file", "read_file", "list_files"),
+    "test_fix": ("write_file", "read_file", "list_files"),
+}
+CODE_STAGES = frozenset(STAGE_TOOLS)
+
+
+@dataclass
+class StageResult:
+    stage: str
+    text: str
+    usage: dict[str, Any] = field(default_factory=dict)
+
+
+class StageRunner(Protocol):
+    async def run(self, stage: str, values: Mapping[str, Any]) -> StageResult: ...
+
+
+def load_config() -> tuple[dict, dict]:
+    agents = yaml.safe_load((CONFIG_DIR / "agents.yaml").read_text(encoding="utf-8"))
+    tasks = yaml.safe_load((CONFIG_DIR / "tasks.yaml").read_text(encoding="utf-8"))
+    return agents, tasks
+
+
+def stage_names(include_helpers: bool = False) -> list[str]:
+    return [
+        key.removesuffix("_task")
+        for key, spec in load_config()[1].items()
+        if include_helpers or not spec.get("helper")
+    ]
+
+
+def stage_inputs(stage: str) -> set[str]:
+    """Placeholders a stage's task text needs."""
+    _, tasks = load_config()
+    spec = tasks[f"{stage}_task"]
+    return placeholders(spec["description"]) | placeholders(spec["expected_output"])
+
+
 class AgileCrew:
-    """敏捷开发工作流团队"""
+    """Real runner: calls the configured LLM through CrewAI."""
 
-    agents: List[BaseAgent]
-    tasks: List[Task]
+    def __init__(self, settings: Settings, workspace: Workspace):
+        self.settings = settings
+        self.workspace = workspace
+        self.agents_config, self.tasks_config = load_config()
 
-    # 配置文件路径
-    agents_config = "config/agents.yaml"
-    tasks_config = "config/tasks.yaml"
-    
+    @cached_property
+    def blueprint_guide(self) -> str:
+        # Single source shared with the single-agent workflow and the Roo Code mode.
+        from agileworkflow.single_agent.roles import find_role_prompts_dir
 
-    @before_kickoff
-    def prepare_inputs(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
-        """在工作流开始前准备输入数据"""
-        print("准备敏捷开发工作流...")
-        
-        # 确保必要的输入参数存在
-        if 'project_name' not in inputs:
-            inputs['project_name'] = "默认项目"
-        
-        if 'project_description' not in inputs:
-            inputs['project_description'] = "这是一个使用敏捷方法开发的项目。"
-            
-        if 'sprint_duration' not in inputs:
-            inputs['sprint_duration'] = "14"
-            
-        print(f"项目名称: {inputs['project_name']}")
-        print(f"项目描述: {inputs['project_description']}")
-        print(f"Sprint周期: {inputs['sprint_duration']}天")
-        
-        return inputs
+        path = find_role_prompts_dir() / "rules-blueprintdesign" / "03-output-contract.md"
+        return path.read_text(encoding="utf-8")
 
-    @after_kickoff
-    def process_output(self, output):
-        """在工作流结束后处理输出数据"""
-        print("\n敏捷开发工作流完成!")
-        print("最终输出是系统设计文档。")
-        return output
+    def build(self, stage: str, values: Mapping[str, Any]):
+        from crewai import Agent, Task
 
-    # 核心开发Agent
+        from agileworkflow.tools import FileWriterTool, ListFilesTool, ReadFileTool
 
-    @agent
-    def system_design_agent(self) -> Agent:
-        """创建系统架构设计专家Agent"""
-        # 读取系统提示模板
-        prompt_path = os.path.join(os.path.dirname(__file__), "prompts/system_design_agent_prompt.txt")
-        with open(prompt_path, "r", encoding="utf-8") as f:
-            system_template = f.read()
-            
-        # 创建文件写入工具
-        file_writer_tool = FileWriterTool()
-        
-        return Agent(
-            config=self.agents_config["system_design_agent"],  # type: ignore[index]
-            verbose=True,
-            tools=[file_writer_tool],
-            system_template=system_template
+        table = {
+            "write_file": FileWriterTool,
+            "read_file": ReadFileTool,
+            "list_files": ListFilesTool,
+        }
+
+        task_spec = self.tasks_config[f"{stage}_task"]
+        agent_key = task_spec["agent"]
+        agent_spec = self.agents_config[agent_key]
+        values = {"blueprint_guide": self.blueprint_guide, **values}
+
+        agent = Agent(
+            role=agent_spec["role"].strip(),
+            goal=agent_spec["goal"].strip(),
+            backstory=agent_spec["backstory"].strip(),
+            # A fresh LLM per stage: CrewAI accumulates token usage on the LLM object,
+            # so a shared one would report running totals (and mix concurrent stages).
+            llm=self.settings.build_llm(),
+            tools=[table[name](self.workspace) for name in STAGE_TOOLS.get(stage, ())],
+            allow_delegation=False,
+            verbose=self.settings.verbose,
+            max_iter=40 if stage in CODE_STAGES else 15,
         )
-
-    @agent
-    def requirement_analysis_agent(self) -> Agent:
-        """创建需求分析专家Agent"""
-        # 读取系统提示模板
-        prompt_path = os.path.join(os.path.dirname(__file__), "prompts/requirement_analysis_agent_prompt.txt")
-        with open(prompt_path, "r", encoding="utf-8") as f:
-            system_template = f.read()
-            
-        # 创建文件写入工具
-        file_writer_tool = FileWriterTool()
-        
-        return Agent(
-            config=self.agents_config["requirement_analysis_agent"],  # type: ignore[index]
-            verbose=True,
-            tools=[file_writer_tool],
-            system_template=system_template
+        task = Task(
+            name=stage,
+            description=render(task_spec["description"], values),
+            expected_output=render(task_spec["expected_output"], values),
+            agent=agent,
         )
+        return agent, task
 
-    @agent
-    def blueprint_design_agent(self) -> Agent:
-        """创建系统蓝图设计专家Agent"""
-        # 读取系统提示模板
-        prompt_path = os.path.join(os.path.dirname(__file__), "prompts/blueprint_design_agent_prompt.txt")
-        with open(prompt_path, "r", encoding="utf-8") as f:
-            system_template = f.read()
-            
-        # 创建文件写入工具
-        file_writer_tool = FileWriterTool()
-        
-        return Agent(
-            config=self.agents_config["blueprint_design_agent"],  # type: ignore[index]
-            verbose=True,
-            tools=[file_writer_tool],
-            system_template=system_template
-        )
+    async def run(self, stage: str, values: Mapping[str, Any]) -> StageResult:
+        from crewai import Crew, Process
 
-    @agent
-    def frontend_design_agent(self) -> Agent:
-        """创建前端设计实现专家Agent"""
-        # 读取系统提示模板
-        prompt_path = os.path.join(os.path.dirname(__file__), "prompts/frontend_design_agent_prompt.txt")
-        with open(prompt_path, "r", encoding="utf-8") as f:
-            system_template = f.read()
-            
-        # 创建文件写入工具
-        file_writer_tool = FileWriterTool()
-        
-        return Agent(
-            config=self.agents_config["frontend_design_agent"],  # type: ignore[index]
-            verbose=True,
-            tools=[file_writer_tool],
-            system_template=system_template
-        )
-
-    @agent
-    def backend_design_agent(self) -> Agent:
-        """创建后端设计实现专家Agent"""
-        # 读取系统提示模板
-        prompt_path = os.path.join(os.path.dirname(__file__), "prompts/backend_design_agent_prompt.txt")
-        with open(prompt_path, "r", encoding="utf-8") as f:
-            system_template = f.read()
-            
-        # 创建文件写入工具
-        file_writer_tool = FileWriterTool()
-        
-        return Agent(
-            config=self.agents_config["backend_design_agent"],  # type: ignore[index]
-            verbose=True,
-            tools=[file_writer_tool],
-            system_template=system_template
-        )
-
-    # 管理系统Agent
-
-    @agent
-    def version_control_agent(self) -> Agent:
-        """创建版本控制管理专家Agent"""
-        # 读取系统提示模板
-        prompt_path = os.path.join(os.path.dirname(__file__), "prompts/version_control_agent_prompt.txt")
-        with open(prompt_path, "r", encoding="utf-8") as f:
-            system_template = f.read()
-            
-        # 创建文件写入工具
-        file_writer_tool = FileWriterTool()
-        
-        return Agent(
-            config=self.agents_config["version_control_agent"],  # type: ignore[index]
-            verbose=True,
-            tools=[file_writer_tool],
-            system_template=system_template
-        )
-
-    @agent
-    def agile_dashboard_agent(self) -> Agent:
-        """创建敏捷仪表盘管理专家Agent"""
-        # 读取系统提示模板
-        prompt_path = os.path.join(os.path.dirname(__file__), "prompts/agile_dashboard_agent_prompt.txt")
-        with open(prompt_path, "r", encoding="utf-8") as f:
-            system_template = f.read()
-            
-        # 创建文件写入工具
-        file_writer_tool = FileWriterTool()
-        
-        return Agent(
-            config=self.agents_config["agile_dashboard_agent"],  # type: ignore[index]
-            verbose=True,
-            tools=[file_writer_tool],
-            system_template=system_template
-        )
-
-    @agent
-    def feedback_planning_agent(self) -> Agent:
-        """创建反馈规划专家Agent"""
-        # 读取系统提示模板
-        prompt_path = os.path.join(os.path.dirname(__file__), "prompts/feedback_planning_agent_prompt.txt")
-        with open(prompt_path, "r", encoding="utf-8") as f:
-            system_template = f.read()
-            
-        # 创建文件写入工具
-        file_writer_tool = FileWriterTool()
-        
-        return Agent(
-            config=self.agents_config["feedback_planning_agent"],  # type: ignore[index]
-            verbose=True,
-            tools=[file_writer_tool],
-            system_template=system_template
-        )
-
-    # 保留原有Agent用于兼容性
-
-    @agent
-    def developer_agent(self) -> Agent:
-        """创建开发实现专家Agent"""
-        # 读取系统提示模板
-        prompt_path = os.path.join(os.path.dirname(__file__), "prompts/developer_agent_prompt.txt")
-        with open(prompt_path, "r", encoding="utf-8") as f:
-            system_template = f.read()
-            
-        # 创建文件写入工具
-        file_writer_tool = FileWriterTool()
-        
-        return Agent(
-            config=self.agents_config["developer_agent"],  # type: ignore[index]
-            verbose=True,
-            tools=[file_writer_tool],
-            system_template=system_template
-        )
-
-    @agent
-    def testing_agent(self) -> Agent:
-        """创建测试验证专家Agent"""
-        # 读取系统提示模板
-        prompt_path = os.path.join(os.path.dirname(__file__), "prompts/testing_agent_prompt.txt")
-        with open(prompt_path, "r", encoding="utf-8") as f:
-            system_template = f.read()
-            
-        # 创建文件写入工具
-        file_writer_tool = FileWriterTool()
-        
-        return Agent(
-            config=self.agents_config["testing_agent"],  # type: ignore[index]
-            verbose=True,
-            tools=[file_writer_tool],
-            system_template=system_template
-        )
-
-    # 兼容性方法
-    @agent
-    def blueprint_agent(self) -> Agent:
-        """创建核心协调者Agent（兼容性方法）"""
-        return self.blueprint_design_agent()
-
-    @agent
-    def requirement_agent(self) -> Agent:
-        """创建需求分析专家Agent（兼容性方法）"""
-        return self.requirement_analysis_agent()
-
-    # 迭代启动阶段任务
-
-    @task
-    def sprint_planning_task(self) -> Task:
-        """创建Sprint规划任务"""
-        return Task(
-            config=self.tasks_config["sprint_planning_task"],  # type: ignore[index]
-        )
-
-    @task
-    def system_design_task(self) -> Task:
-        """创建系统架构设计任务"""
-        return Task(
-            config=self.tasks_config["system_design_task"],  # type: ignore[index]
-        )
-
-    @task
-    def requirement_analysis_task(self) -> Task:
-        """创建需求分析任务"""
-        return Task(
-            config=self.tasks_config["requirement_analysis_task"],  # type: ignore[index]
-            context=[self.system_design_task()]
-        )
-
-    # 蓝图设计阶段任务
-
-    @task
-    def blueprint_design_task(self) -> Task:
-        """创建系统蓝图设计任务"""
-        return Task(
-            config=self.tasks_config["blueprint_design_task"],  # type: ignore[index]
-            context=[
-                self.requirement_analysis_task(),
-                self.system_design_task()
-            ]
-        )
-
-    # 实现阶段任务
-
-    @task
-    def frontend_design_task(self) -> Task:
-        """创建前端设计实现任务"""
-        return Task(
-            config=self.tasks_config["frontend_design_task"],  # type: ignore[index]
-            context=[self.blueprint_design_task()]
-        )
-
-    @task
-    def backend_design_task(self) -> Task:
-        """创建后端设计实现任务"""
-        return Task(
-            config=self.tasks_config["backend_design_task"],  # type: ignore[index]
-            context=[self.blueprint_design_task()]
-        )
-
-    # 管理系统任务
-
-    @task
-    def version_control_task(self) -> Task:
-        """创建版本控制管理任务"""
-        return Task(
-            config=self.tasks_config["version_control_task"],  # type: ignore[index]
-            context=[
-                self.blueprint_design_task(),
-                self.frontend_design_task(),
-                self.backend_design_task()
-            ]
-        )
-
-    @task
-    def agile_dashboard_task(self) -> Task:
-        """创建敏捷仪表盘管理任务"""
-        return Task(
-            config=self.tasks_config["agile_dashboard_task"],  # type: ignore[index]
-            context=[
-                self.requirement_analysis_task(),
-                self.frontend_design_task(),
-                self.backend_design_task()
-            ]
-        )
-
-    @task
-    def feedback_planning_task(self) -> Task:
-        """创建反馈规划任务"""
-        return Task(
-            config=self.tasks_config["feedback_planning_task"],  # type: ignore[index]
-            context=[
-                self.frontend_design_task(),
-                self.backend_design_task(),
-                self.agile_dashboard_task()
-            ]
-        )
-
-    # 保留原有任务用于兼容性
-
-    @task
-    def development_task(self) -> Task:
-        """创建开发实现任务"""
-        return Task(
-            config=self.tasks_config["development_task"],  # type: ignore[index]
-            context=[self.requirement_analysis_task()]
-        )
-
-    @task
-    def testing_task(self) -> Task:
-        """创建测试验证任务"""
-        return Task(
-            config=self.tasks_config["testing_task"],  # type: ignore[index]
-            context=[self.development_task(), self.requirement_analysis_task()]
-        )
-
-    @task
-    def system_design_summary_task(self) -> Task:
-        """创建系统设计总结任务"""
-        return Task(
-            config=self.tasks_config["system_design_summary_task"],  # type: ignore[index]
-            context=[
-                self.system_design_task(),
-                self.requirement_analysis_task(),
-                self.blueprint_design_task(),
-                self.frontend_design_task(),
-                self.backend_design_task(),
-                self.version_control_task(),
-                self.agile_dashboard_task(),
-                self.feedback_planning_task()
-            ]
-        )
-
-    @crew
-    def crew(self) -> Crew:
-        """创建敏捷开发工作流团队"""
-        return Crew(
-            agents=self.agents,  # 由@agent装饰器自动收集
-            tasks=self.tasks,    # 由@task装饰器自动收集
+        agent, task = self.build(stage, values)
+        crew = Crew(
+            agents=[agent],
+            tasks=[task],
             process=Process.sequential,
-            verbose=True,
-            output_log_file="agile_workflow_logs.txt"
+            verbose=self.settings.verbose,
         )
+        # No inputs: text is already rendered, so CrewAI does no interpolation.
+        output = await crew.kickoff_async()
+        usage = getattr(output, "token_usage", None)
+        usage = usage.model_dump() if hasattr(usage, "model_dump") else {}
+        return StageResult(stage=stage, text=output.raw or "", usage=usage)

@@ -30,6 +30,7 @@
 
 ```
 workflow_single_agent/
+├── .roomodes                          # Roo Code custom modes
 ├── README.md                          # 本文档
 ├── agent_profile/                     # 代理配置文件
 │   ├── BlueprintWriter_Profile.md     # 蓝图设计师角色配置
@@ -37,6 +38,7 @@ workflow_single_agent/
 ├── role_prompts/                      # 角色提示规则
 │   ├── rules-01-req-gen/             # 需求分析师规则
 │   ├── rules-blueprintdesign/        # 蓝图设计师规则
+│   ├── rules-code-critic/            # 代码诊断师规则
 │   ├── rules-code-reviewer/          # 代码审查员规则
 │   ├── rules-coder/                  # 编码工程师规则
 │   ├── rules-debugger-deployer/      # 部署调试员规则
@@ -109,6 +111,22 @@ workflow_single_agent/
 - 详细的架构设计文档
 - 完整的代码审查报告
 - 全面的部署测试报告
+
+## ▶️ 运行方式
+
+### 方式一：Roo Code 自定义模式
+
+这些提示词按 Roo Code 的 `.roo/rules-<模式>/` 约定组织。把本目录的 `.roomodes` 复制到你的项目根目录，把 `role_prompts/rules-*` 复制为 `<项目>/.roo/rules-*`，Roo Code 中即出现 7 个模式，从 `01-req-gen` 开始。
+
+### 方式二：命令行（CrewAI）
+
+```bash
+cd ../workflow_multi_agent/crewai_code
+uv sync && cp .env.example .env    # 填 MODEL 与 API key
+uv run nl2bp single --name 待办清单 --description "多用户待办清单，支持标签和截止日期"
+```
+
+运行器读取本目录的 `role_prompts/`，按 需求 → 架构 → 蓝图 → 编码 → 审查 顺序切换角色；审查不通过时由 `code-critic` 诊断、`coder` 修复后复审（`--max-fix-rounds`，默认 1），最后由 `debugger-deployer` 静态检查并写部署文件。结果在 `output/<run>/`。
 
 ## 🚀 使用指南
 
