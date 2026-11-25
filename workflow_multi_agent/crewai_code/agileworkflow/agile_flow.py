@@ -91,6 +91,10 @@ class AgileWorkflowFlow(Flow[AgileWorkflowState]):
     def settings(self) -> Settings:
         return self._settings
 
+    @property
+    def blueprint_only(self) -> bool:
+        return self.settings is not None and self.settings.stop_after == "blueprint"
+
     def _values(self) -> dict[str, Any]:
         s = self.state
         return {
@@ -224,6 +228,8 @@ class AgileWorkflowFlow(Flow[AgileWorkflowState]):
 
     @listen(requirement_analysis)
     async def sprint_planning(self):
+        if self.blueprint_only:
+            return
         self.state.outputs["sprint_plan"] = await self._stage("sprint_planning")
 
     @listen(system_design)
@@ -248,14 +254,20 @@ class AgileWorkflowFlow(Flow[AgileWorkflowState]):
 
     @listen(blueprint_design)
     async def frontend_design(self):
+        if self.blueprint_only:
+            return
         return await self._stage("frontend_design")
 
     @listen(blueprint_design)
     async def backend_design(self):
+        if self.blueprint_only:
+            return
         return await self._stage("backend_design")
 
     @listen(and_(frontend_design, backend_design))
     async def verify(self):
+        if self.blueprint_only:
+            return
         root, q, settings = self.workspace.root, self.state.quality, self.settings
         declared = q.get("contract_types", [])
 
@@ -342,6 +354,8 @@ class AgileWorkflowFlow(Flow[AgileWorkflowState]):
         only restate (or invent) what the flow already measures.
         """
         s = self.state
+        if self.blueprint_only:
+            return
         stages = ", ".join(f"{k} {v}s" for k, v in s.timings.items())
         git_log = await asyncio.to_thread(quality.git_log, self.workspace.root)
         report = "\n".join(
@@ -369,6 +383,8 @@ class AgileWorkflowFlow(Flow[AgileWorkflowState]):
 
     @listen(project_status)
     async def system_design_summary(self):
+        if self.blueprint_only:
+            return
         return await self._stage("system_design_summary")
 
     @listen(system_design_summary)
@@ -383,6 +399,7 @@ class AgileWorkflowFlow(Flow[AgileWorkflowState]):
         self.workspace.write_manifest(
             {
                 "workflow": "multi_agent",
+                "stop_after": settings.stop_after if settings else None,
                 "run_id": self.workspace.run_id,
                 "project_name": s.project_name,
                 "project_description": s.project_description,
