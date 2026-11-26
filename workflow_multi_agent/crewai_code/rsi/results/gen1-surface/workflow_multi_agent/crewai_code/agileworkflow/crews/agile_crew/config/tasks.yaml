@@ -1,0 +1,237 @@
+# One entry per workflow stage; each stage runs once as a one-task crew.
+# {placeholders} are filled by agileworkflow.templating (single pass). Upstream stage
+# outputs are passed in by name. Documents come back as the final answer; the flow saves
+# them, validates every PlantUML block (repairing failures), and commits them to git.
+# {diagram_guide} / {blueprint_guide} are the nl2bp skill's references
+# (skills/nl2bp/references/), the single source shared with the skill and Roo Code modes.
+
+requirement_analysis_task:
+  agent: requirement_analysis_agent
+  description: >
+    Project: {project_name}
+
+    Request:
+    {project_description}
+
+    Write requirements.md:
+    1. Goal (2–3 sentences) and actors.
+    2. User stories US-1… ("As a … I want … so that …") with Given/When/Then acceptance
+       criteria and MoSCoW priority.
+    3. Business rules BR-1… with exact numbers (limits, rates, deadlines).
+    4. Non-functional requirements that change the design; out of scope; Assumptions.
+    5. One use case diagram and one activity diagram per rule-heavy flow.
+
+    Diagram guide:
+    {diagram_guide}
+
+    Write in {language}; PlantUML identifiers in English. Return the document as your final answer.
+  expected_output: >
+    requirements.md with numbered user stories, business rules, assumptions, a use case
+    diagram and activity diagrams.
+
+system_design_task:
+  agent: system_design_agent
+  description: >
+    Project: {project_name}
+
+    requirements.md:
+    {requirement_analysis}
+
+    Write architecture.md:
+    1. Stack (language, framework, storage, deployment target), one line of reason each.
+       Prefer Python (FastAPI + SQLite) or Node.js for the backend unless a requirement
+       says otherwise.
+    2. Decisions in ADR form (context / decision / consequence).
+    3. C4 Context and C4 Container diagrams (`!include <C4/C4_Context>` / `<C4/C4_Container>`).
+    4. How each non-functional requirement is met.
+    Do not draw class, sequence or ER diagrams here.
+
+    Diagram guide:
+    {diagram_guide}
+
+    Write in {language}; PlantUML identifiers in English. Return the document as your final answer.
+  expected_output: >
+    architecture.md with stack, ADRs and C4 context and container diagrams.
+
+sprint_planning_task:
+  agent: requirement_analysis_agent
+  description: >
+    Project: {project_name}. Sprint length: {sprint_duration} days.
+
+    requirements.md:
+    {requirement_analysis}
+
+    Write sprint_plan.md: sprint goal; backlog of the Must-have stories with story-point
+    estimates; a Gantt chart of the sprint (`@startgantt`, see the guide); risks.
+
+    Diagram guide:
+    {diagram_guide}
+
+    Write in {language}. Return the document as your final answer.
+  expected_output: >
+    sprint_plan.md with goal, estimated backlog, a Gantt chart and risks.
+
+blueprint_design_task:
+  agent: blueprint_design_agent
+  description: >
+    Project: {project_name}
+
+    requirements.md:
+    {requirement_analysis}
+
+    architecture.md:
+    {system_design}
+
+    Human reviewer's feedback on the previous version (ignore if empty):
+    {review_feedback}
+
+    Write blueprint.md exactly as the output contract below requires:
+    1. Class diagrams declaring every type the code must contain (the contract), with
+       names idiomatic for the chosen stack.
+    2. A sequence diagram per core user story.
+    3. An IE entity-relationship diagram for the database; state diagrams for entities with
+       a lifecycle.
+    4. The interface table and the data flow.
+    5. Coverage: every BR-* rule is enforced in a named class attribute/method, an
+       interface-table endpoint, a state transition or guard, or a sequence message; every
+       lifecycle state the requirements name appears in the state diagram under that same
+       name; every domain concept the requirements name is a class, enum or attribute.
+
+    {blueprint_guide}
+
+    Write in {language}; PlantUML identifiers in English. Return the document as your final answer.
+  expected_output: >
+    blueprint.md following the output contract: class contract, sequence, ER and state
+    diagrams, interface table, data flow.
+
+frontend_design_task:
+  agent: frontend_design_agent
+  description: >
+    Project: {project_name}
+
+    blueprint.md:
+    {blueprint_design}
+
+    Contract types (use these names where the frontend models them):
+    {contract}
+
+    Implement a minimal runnable frontend with the write_file tool, paths under frontend/
+    (e.g. frontend/index.html, frontend/js/app.js). Complete files only. Call only the
+    endpoints in the blueprint's interface table.
+
+    Final answer: a short report in {language}: pages, endpoints used, files written, how
+    to run.
+  expected_output: >
+    Files under frontend/ and a report listing them and how to run.
+
+backend_design_task:
+  agent: backend_design_agent
+  description: >
+    Project: {project_name}
+
+    blueprint.md:
+    {blueprint_design}
+
+    Contract types (implement every one under this exact name):
+    {contract}
+
+    Implement the backend with the write_file tool, paths under backend/:
+    1. Every contract type, every endpoint in the interface table, every business rule BR-*.
+    2. Dependencies in backend/requirements.txt (Python) or backend/package.json (Node).
+    3. Tests for each acceptance criterion that run offline from backend/
+       (backend/tests/test_*.py with `python -m pytest`, or the package.json "test" script).
+       SQLite or in-memory storage; no network.
+    4. Complete files only.
+
+    Final answer: a short report in {language}: data model, API, files written, how to run
+    and test.
+  expected_output: >
+    Files under backend/ including tests, and a report listing them and how to run.
+
+system_design_summary_task:
+  agent: blueprint_design_agent
+  description: >
+    Project: {project_name}
+
+    architecture.md:
+    {system_design}
+
+    blueprint.md:
+    {blueprint_design}
+
+    Frontend report:
+    {frontend_design}
+
+    Backend report:
+    {backend_design}
+
+    Project status (generated from git history and measured checks; treat as fact):
+    {project_status}
+
+    Write summary.md: the final architecture and components; every deviation of the code
+    from the blueprint (use the measured conformance and test results); strengths and
+    limits; next steps ranked by impact. Include the final C4 Container diagram
+    (`@startuml {project_slug}_c4_container_final`).
+
+    Write in {language}; PlantUML identifiers in English. Return the document as your final answer.
+  expected_output: >
+    summary.md with architecture, measured deviations, limits, next steps and a final C4
+    Container diagram.
+
+# ---------------------------------------------------------------------------
+# Helper tasks: run by the flow only when a check fails.
+
+diagram_repair_task:
+  agent: blueprint_design_agent
+  helper: true
+  description: >
+    These PlantUML diagrams fail `plantuml -syntax` (line numbers are 0-based; the @start
+    line is 0):
+
+    {broken_diagrams}
+
+    Fix only the syntax errors; keep each diagram's name, element names and meaning.
+    Syntax reference:
+    {syntax_reference}
+
+    Final answer: only the fixed diagrams, each in its own ```plantuml block whose first
+    line keeps the original `@startX <name>`.
+  expected_output: >
+    One ```plantuml block per fixed diagram, names unchanged.
+
+conformance_fix_task:
+  agent: backend_design_agent
+  helper: true
+  description: >
+    The blueprint's class diagrams declare these types, but the code under frontend/ and
+    backend/ does not contain them:
+    {missing_types}
+
+    blueprint.md:
+    {blueprint_design}
+
+    Use list_files / read_file to inspect the code, then write_file to add the missing types
+    as the blueprint defines them (complete files). Do not delete or rename existing types.
+    Final answer: which types you added, in which files.
+  expected_output: >
+    Updated files containing the missing types, and a list of the changes.
+
+test_fix_task:
+  agent: backend_design_agent
+  helper: true
+  description: >
+    The backend tests failed in an isolated container.
+
+    Command: {test_command}
+    Output (tail):
+    {test_output}
+
+    blueprint.md:
+    {blueprint_design}
+
+    Use list_files / read_file to find the cause and write_file to save fixed, complete
+    files. Fix the code, not the tests; change a test only if it contradicts the
+    requirements, and say so. Add missing dependencies to requirements.txt / package.json.
+    Final answer: what you changed and why.
+  expected_output: >
+    Fixed files and an explanation of each change.

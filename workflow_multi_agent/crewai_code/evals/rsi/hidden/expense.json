@@ -1,0 +1,86 @@
+{
+  "concepts": [
+    [
+      "ExpenseReport",
+      "ExpenseClaim",
+      "Claim",
+      "Reimbursement"
+    ],
+    [
+      "Invoice",
+      "Receipt"
+    ],
+    [
+      "Approval",
+      "ApprovalStep"
+    ],
+    [
+      "Employee",
+      "User"
+    ]
+  ],
+  "rules": [
+    {
+      "id": "inv-1000",
+      "any": [
+        "\\b1000\\b",
+        "1,000"
+      ]
+    },
+    {
+      "id": "total-5000",
+      "any": [
+        "\\b5000\\b",
+        "5,000"
+      ]
+    },
+    {
+      "id": "submit-90d",
+      "any": [
+        "90\\s*天",
+        "90\\s*days?",
+        "days\\s*=\\s*90"
+      ]
+    },
+    {
+      "id": "resubmit-2",
+      "any": [
+        "2\\s*次",
+        "\\b2\\s*(times|resubmissions?)",
+        "max_resubmi\\w*\\s*[:=]\\s*2"
+      ]
+    }
+  ],
+  "diagrams": [
+    "class",
+    "sequence",
+    "er",
+    "state",
+    "c4"
+  ],
+  "states": [
+    [
+      "DRAFT"
+    ],
+    [
+      "SUBMITTED",
+      "PENDING"
+    ],
+    [
+      "APPROVED"
+    ],
+    [
+      "REJECTED"
+    ],
+    [
+      "PAID"
+    ]
+  ],
+  "endpoints": [
+    "(GET|POST|PUT|PATCH|DELETE)\\s+`?/\\S*(expense|claim|report|reimburse)",
+    "(GET|POST|PUT|PATCH|DELETE)\\s+`?/\\S*(submit)",
+    "(GET|POST|PUT|PATCH|DELETE)\\s+`?/\\S*(approv)",
+    "(GET|POST|PUT|PATCH|DELETE)\\s+`?/\\S*(reject)",
+    "(GET|POST|PUT|PATCH|DELETE)\\s+`?/\\S*(pay|paid)"
+  ]
+}

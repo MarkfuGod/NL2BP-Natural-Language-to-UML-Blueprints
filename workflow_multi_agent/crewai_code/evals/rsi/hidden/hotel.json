@@ -1,0 +1,88 @@
+{
+  "concepts": [
+    [
+      "Room"
+    ],
+    [
+      "RoomType"
+    ],
+    [
+      "Reservation",
+      "Booking"
+    ],
+    [
+      "Guest",
+      "Customer"
+    ],
+    [
+      "Rate",
+      "Price",
+      "RoomRate"
+    ]
+  ],
+  "rules": [
+    {
+      "id": "max-3",
+      "any": [
+        "3\\s*间",
+        "\\b3\\s*rooms?",
+        "max\\w*\\s*[:=]\\s*3\\b"
+      ]
+    },
+    {
+      "id": "max-14",
+      "any": [
+        "14\\s*晚",
+        "14\\s*nights?",
+        "\\b14\\b"
+      ]
+    },
+    {
+      "id": "cancel-24h",
+      "any": [
+        "24\\s*小时",
+        "24\\s*h(ours?)?\\b",
+        "hours\\s*=\\s*24"
+      ]
+    }
+  ],
+  "diagrams": [
+    "class",
+    "sequence",
+    "er",
+    "state",
+    "c4"
+  ],
+  "states": [
+    [
+      "CONFIRMED",
+      "BOOKED",
+      "RESERVED",
+      "ACTIVE",
+      "PENDING",
+      "SCHEDULED"
+    ],
+    [
+      "CHECKED_IN",
+      "IN_HOUSE",
+      "OCCUPIED"
+    ],
+    [
+      "CHECKED_OUT",
+      "COMPLETED"
+    ],
+    [
+      "CANCELLED",
+      "CANCELED",
+      "CANCELLED_BY_USER",
+      "WITHDRAWN"
+    ]
+  ],
+  "endpoints": [
+    "(GET|POST|PUT|PATCH|DELETE)\\s+`?/\\S*(reservation|booking)",
+    "GET\\s+`?/\\S*(availab|room-?type|search)",
+    "(GET|POST|PUT|PATCH|DELETE)\\s+`?/\\S*(cancel)",
+    "(GET|POST|PUT|PATCH|DELETE)\\s+`?/\\S*(check-?in)",
+    "(GET|POST|PUT|PATCH|DELETE)\\s+`?/\\S*(rate|price)"
+  ]
+}

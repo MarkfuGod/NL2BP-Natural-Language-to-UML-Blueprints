@@ -1,0 +1,85 @@
+{
+  "concepts": [
+    [
+      "Product",
+      "Item",
+      "Sku",
+      "SKU"
+    ],
+    [
+      "Batch",
+      "Lot"
+    ],
+    [
+      "StockMovement",
+      "InventoryTransaction",
+      "Movement",
+      "StockTransaction"
+    ],
+    [
+      "Location",
+      "BinLocation",
+      "StorageLocation",
+      "Bin"
+    ]
+  ],
+  "rules": [
+    {
+      "id": "fifo",
+      "any": [
+        "FIFO",
+        "先进先出",
+        "first[- ]in"
+      ]
+    },
+    {
+      "id": "expiry-30d",
+      "any": [
+        "30\\s*天",
+        "30\\s*days?",
+        "days\\s*=\\s*30"
+      ]
+    },
+    {
+      "id": "approval-500",
+      "any": [
+        "\\b500\\b"
+      ]
+    }
+  ],
+  "diagrams": [
+    "class",
+    "sequence",
+    "er",
+    "state",
+    "c4"
+  ],
+  "states": [
+    [
+      "NORMAL",
+      "IN_STOCK",
+      "AVAILABLE",
+      "OK"
+    ],
+    [
+      "NEAR_EXPIRY",
+      "EXPIRING",
+      "WARNING",
+      "YELLOW"
+    ],
+    [
+      "EXPIRED"
+    ],
+    [
+      "PENDING_APPROVAL",
+      "PENDING",
+      "AWAITING_APPROVAL"
+    ]
+  ],
+  "endpoints": [
+    "(GET|POST|PUT|PATCH|DELETE)\\s+`?/\\S*(inbound|receiv|stock-?in)",
+    "(GET|POST|PUT|PATCH|DELETE)\\s+`?/\\S*(outbound|ship|stock-?out|issue)",
+    "(GET|POST|PUT|PATCH|DELETE)\\s+`?/\\S*(stocktak|count|inventory-?check|cycle)",
+    "(GET|POST|PUT|PATCH|DELETE)\\s+`?/\\S*(approv)"
+  ]
+}

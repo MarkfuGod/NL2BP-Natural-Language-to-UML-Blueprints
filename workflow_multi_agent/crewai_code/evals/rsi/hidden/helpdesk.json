@@ -1,0 +1,85 @@
+{
+  "concepts": [
+    [
+      "Ticket",
+      "Incident"
+    ],
+    [
+      "Comment",
+      "WorkLog",
+      "Note"
+    ],
+    [
+      "Engineer",
+      "Agent",
+      "Technician"
+    ],
+    [
+      "SLA",
+      "SlaPolicy",
+      "ServiceLevel"
+    ]
+  ],
+  "rules": [
+    {
+      "id": "p1-1h-4h",
+      "any": [
+        "1\\s*小时",
+        "1\\s*h(our)?\\b",
+        "hours\\s*=\\s*1\\b"
+      ]
+    },
+    {
+      "id": "p2-24h",
+      "any": [
+        "24\\s*小时",
+        "24\\s*h(ours?)?\\b",
+        "hours\\s*=\\s*24"
+      ]
+    },
+    {
+      "id": "autoclose-3d",
+      "any": [
+        "3\\s*天",
+        "3\\s*days?",
+        "days\\s*=\\s*3"
+      ]
+    }
+  ],
+  "diagrams": [
+    "class",
+    "sequence",
+    "er",
+    "state",
+    "c4"
+  ],
+  "states": [
+    [
+      "NEW",
+      "OPEN"
+    ],
+    [
+      "IN_PROGRESS",
+      "ASSIGNED"
+    ],
+    [
+      "WAITING",
+      "PENDING_USER",
+      "AWAITING",
+      "ON_HOLD"
+    ],
+    [
+      "RESOLVED"
+    ],
+    [
+      "CLOSED"
+    ]
+  ],
+  "endpoints": [
+    "(GET|POST|PUT|PATCH|DELETE)\\s+`?/\\S*(ticket|incident)",
+    "(GET|POST|PUT|PATCH|DELETE)\\s+`?/\\S*(assign|claim)",
+    "(GET|POST|PUT|PATCH|DELETE)\\s+`?/\\S*(comment|worklog|note)",
+    "(GET|POST|PUT|PATCH|DELETE)\\s+`?/\\S*(escalat)",
+    "(GET|POST|PUT|PATCH|DELETE)\\s+`?/\\S*(resolve|close)"
+  ]
+}

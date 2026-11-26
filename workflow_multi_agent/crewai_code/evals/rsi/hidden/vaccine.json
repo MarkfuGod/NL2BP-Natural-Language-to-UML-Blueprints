@@ -1,0 +1,92 @@
+{
+  "concepts": [
+    [
+      "Appointment",
+      "Booking",
+      "Reservation"
+    ],
+    [
+      "Resident",
+      "Patient",
+      "Person"
+    ],
+    [
+      "Vaccine"
+    ],
+    [
+      "VaccinationSite",
+      "Site",
+      "Clinic",
+      "Location"
+    ],
+    [
+      "Dose",
+      "Vaccination",
+      "VaccinationRecord"
+    ]
+  ],
+  "rules": [
+    {
+      "id": "interval-21d",
+      "any": [
+        "21\\s*天",
+        "21\\s*days?",
+        "days\\s*=\\s*21"
+      ]
+    },
+    {
+      "id": "cap-30",
+      "any": [
+        "\\b30\\b"
+      ]
+    },
+    {
+      "id": "questionnaire",
+      "any": [
+        "问卷",
+        "[Qq]uestionnaire"
+      ]
+    }
+  ],
+  "diagrams": [
+    "class",
+    "sequence",
+    "er",
+    "state",
+    "c4"
+  ],
+  "states": [
+    [
+      "BOOKED",
+      "SCHEDULED",
+      "CONFIRMED",
+      "ACTIVE",
+      "PENDING",
+      "RESERVED"
+    ],
+    [
+      "VACCINATED",
+      "COMPLETED",
+      "DONE",
+      "ADMINISTERED"
+    ],
+    [
+      "NO_SHOW",
+      "MISSED",
+      "FORFEITED",
+      "EXPIRED"
+    ],
+    [
+      "CANCELLED",
+      "CANCELED",
+      "CANCELLED_BY_USER",
+      "WITHDRAWN"
+    ]
+  ],
+  "endpoints": [
+    "(GET|POST|PUT|PATCH|DELETE)\\s+`?/\\S*(appointment|booking|reservation)",
+    "(GET|POST|PUT|PATCH|DELETE)\\s+`?/\\S*(questionnaire|health)",
+    "(GET|POST|PUT|PATCH|DELETE)\\s+`?/\\S*(vaccinat|dose|record|administer)",
+    "GET\\s+`?/\\S*(site|slot|availab)"
+  ]
+}

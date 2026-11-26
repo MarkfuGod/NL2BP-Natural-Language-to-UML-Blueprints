@@ -1,0 +1,98 @@
+{
+  "concepts": [
+    [
+      "Member"
+    ],
+    [
+      "Class",
+      "GroupClass",
+      "Course",
+      "Session",
+      "ClassSession"
+    ],
+    [
+      "Booking",
+      "Reservation",
+      "Enrollment"
+    ],
+    [
+      "Waitlist",
+      "WaitlistEntry"
+    ],
+    [
+      "Coach",
+      "Trainer",
+      "Instructor"
+    ]
+  ],
+  "rules": [
+    {
+      "id": "advance-7d",
+      "any": [
+        "7\\s*天",
+        "7\\s*days?",
+        "days\\s*=\\s*7"
+      ]
+    },
+    {
+      "id": "cancel-4h",
+      "any": [
+        "4\\s*小时",
+        "4\\s*h(ours?)?\\b",
+        "hours\\s*=\\s*4"
+      ]
+    },
+    {
+      "id": "suspend-2",
+      "any": [
+        "2\\s*次",
+        "\\b2\\s*(times|absences|no-?shows)"
+      ]
+    }
+  ],
+  "diagrams": [
+    "class",
+    "sequence",
+    "er",
+    "state",
+    "c4"
+  ],
+  "states": [
+    [
+      "BOOKED",
+      "CONFIRMED",
+      "RESERVED",
+      "ACTIVE",
+      "PENDING",
+      "SCHEDULED"
+    ],
+    [
+      "WAITLISTED",
+      "WAITING",
+      "QUEUED"
+    ],
+    [
+      "CANCELLED",
+      "CANCELED",
+      "CANCELLED_BY_USER",
+      "WITHDRAWN"
+    ],
+    [
+      "ATTENDED",
+      "CHECKED_IN",
+      "PRESENT"
+    ],
+    [
+      "NO_SHOW",
+      "ABSENT",
+      "LATE",
+      "MISSED"
+    ]
+  ],
+  "endpoints": [
+    "(GET|POST|PUT|PATCH|DELETE)\\s+`?/\\S*(booking|reservation|enroll)",
+    "(GET|POST|PUT|PATCH|DELETE)\\s+`?/\\S*(waitlist|queue)",
+    "(GET|POST|PUT|PATCH|DELETE)\\s+`?/\\S*(cancel)",
+    "(GET|POST|PUT|PATCH|DELETE)\\s+`?/\\S*(check-?in|attend|sign)"
+  ]
+}

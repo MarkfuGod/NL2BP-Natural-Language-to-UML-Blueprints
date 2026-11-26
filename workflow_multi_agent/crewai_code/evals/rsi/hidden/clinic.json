@@ -1,0 +1,98 @@
+{
+  "concepts": [
+    [
+      "Appointment",
+      "Booking",
+      "Registration"
+    ],
+    [
+      "Doctor",
+      "Physician"
+    ],
+    [
+      "Patient"
+    ],
+    [
+      "Department",
+      "Clinic",
+      "Specialty"
+    ],
+    [
+      "TimeSlot",
+      "Slot",
+      "Schedule"
+    ]
+  ],
+  "rules": [
+    {
+      "id": "slot-15m",
+      "any": [
+        "15\\s*分钟",
+        "15\\s*min",
+        "minutes\\s*=\\s*15"
+      ]
+    },
+    {
+      "id": "max-32",
+      "any": [
+        "\\b32\\b"
+      ]
+    },
+    {
+      "id": "cancel-2h",
+      "any": [
+        "2\\s*小时",
+        "2\\s*h(ours?)?\\b",
+        "hours\\s*=\\s*2"
+      ]
+    },
+    {
+      "id": "freeze-3-30",
+      "any": [
+        "3\\s*次",
+        "30\\s*天",
+        "30\\s*days?"
+      ]
+    }
+  ],
+  "diagrams": [
+    "class",
+    "sequence",
+    "er",
+    "state",
+    "c4"
+  ],
+  "states": [
+    [
+      "BOOKED",
+      "SCHEDULED",
+      "CONFIRMED",
+      "ACTIVE",
+      "PENDING",
+      "RESERVED"
+    ],
+    [
+      "COMPLETED",
+      "VISITED",
+      "DONE",
+      "ATTENDED"
+    ],
+    [
+      "CANCELLED",
+      "CANCELED",
+      "CANCELLED_BY_USER",
+      "WITHDRAWN"
+    ],
+    [
+      "NO_SHOW",
+      "NOSHOW",
+      "MISSED"
+    ]
+  ],
+  "endpoints": [
+    "(GET|POST|PUT|PATCH|DELETE)\\s+`?/\\S*(appointment|booking|registration)",
+    "GET\\s+`?/\\S*(slot|schedule|availab)",
+    "(GET|POST|PUT|PATCH|DELETE)\\s+`?/\\S*(cancel|appointment)",
+    "(GET|POST|PUT|PATCH|DELETE)\\s+`?/\\S*(complete|visit|attend)"
+  ]
+}

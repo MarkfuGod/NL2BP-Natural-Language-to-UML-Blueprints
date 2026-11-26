@@ -1,0 +1,93 @@
+{
+  "concepts": [
+    [
+      "Car",
+      "Vehicle"
+    ],
+    [
+      "Rental",
+      "Reservation",
+      "Booking",
+      "RentalOrder"
+    ],
+    [
+      "Customer"
+    ],
+    [
+      "Branch",
+      "Store",
+      "Location"
+    ],
+    [
+      "Deposit",
+      "Payment"
+    ]
+  ],
+  "rules": [
+    {
+      "id": "deposit-2000",
+      "any": [
+        "\\b2000\\b",
+        "2,000"
+      ]
+    },
+    {
+      "id": "term-1-30",
+      "any": [
+        "30\\s*天",
+        "30\\s*days?",
+        "days\\s*=\\s*30"
+      ]
+    },
+    {
+      "id": "late-4h",
+      "any": [
+        "4\\s*小时",
+        "4\\s*h(ours?)?\\b",
+        "hours\\s*=\\s*4"
+      ]
+    }
+  ],
+  "diagrams": [
+    "class",
+    "sequence",
+    "er",
+    "state",
+    "c4"
+  ],
+  "states": [
+    [
+      "RESERVED",
+      "BOOKED",
+      "CONFIRMED",
+      "ACTIVE",
+      "PENDING",
+      "SCHEDULED"
+    ],
+    [
+      "PICKED_UP",
+      "IN_USE",
+      "ACTIVE",
+      "RENTED",
+      "ONGOING"
+    ],
+    [
+      "RETURNED",
+      "COMPLETED",
+      "CLOSED"
+    ],
+    [
+      "CANCELLED",
+      "CANCELED",
+      "CANCELLED_BY_USER",
+      "WITHDRAWN"
+    ]
+  ],
+  "endpoints": [
+    "(GET|POST|PUT|PATCH|DELETE)\\s+`?/\\S*(rental|reservation|booking|order)",
+    "GET\\s+`?/\\S*(car|vehicle|availab)",
+    "(GET|POST|PUT|PATCH|DELETE)\\s+`?/\\S*(pick-?up)",
+    "(GET|POST|PUT|PATCH|DELETE)\\s+`?/\\S*(return)",
+    "(GET|POST|PUT|PATCH|DELETE)\\s+`?/\\S*(damage|inspect|deposit)"
+  ]
+}

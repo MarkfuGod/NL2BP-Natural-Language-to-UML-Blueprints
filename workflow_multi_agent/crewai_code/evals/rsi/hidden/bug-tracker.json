@@ -1,0 +1,94 @@
+{
+  "concepts": [
+    [
+      "Bug",
+      "Issue",
+      "Defect"
+    ],
+    [
+      "Project"
+    ],
+    [
+      "Comment",
+      "Attachment"
+    ],
+    [
+      "User",
+      "Member"
+    ],
+    [
+      "StatusTransition",
+      "StatusHistory",
+      "History",
+      "StateChange"
+    ]
+  ],
+  "rules": [
+    {
+      "id": "assign-2h",
+      "any": [
+        "2\\s*小时",
+        "2\\s*h(ours?)?\\b",
+        "hours\\s*=\\s*2"
+      ]
+    },
+    {
+      "id": "reopen-3",
+      "any": [
+        "3\\s*次",
+        "\\b3\\s*(times|reopens?)"
+      ]
+    },
+    {
+      "id": "verify",
+      "any": [
+        "验证",
+        "[Vv]erif"
+      ]
+    }
+  ],
+  "diagrams": [
+    "class",
+    "sequence",
+    "er",
+    "state",
+    "c4"
+  ],
+  "states": [
+    [
+      "NEW",
+      "OPEN"
+    ],
+    [
+      "CONFIRMED",
+      "TRIAGED",
+      "ACCEPTED"
+    ],
+    [
+      "IN_PROGRESS",
+      "FIXING"
+    ],
+    [
+      "RESOLVED",
+      "TO_VERIFY",
+      "PENDING_VERIFICATION",
+      "FIXED"
+    ],
+    [
+      "CLOSED",
+      "VERIFIED"
+    ],
+    [
+      "REJECTED",
+      "WONT_FIX",
+      "INVALID"
+    ]
+  ],
+  "endpoints": [
+    "(GET|POST|PUT|PATCH|DELETE)\\s+`?/\\S*(bug|issue|defect)",
+    "(GET|POST|PUT|PATCH|DELETE)\\s+`?/\\S*(assign)",
+    "(GET|POST|PUT|PATCH|DELETE)\\s+`?/\\S*(reopen|status|transition)",
+    "(GET|POST|PUT|PATCH|DELETE)\\s+`?/\\S*(verify|close)",
+    "GET\\s+`?/\\S*(report|trend|stat)"
+  ]
+}

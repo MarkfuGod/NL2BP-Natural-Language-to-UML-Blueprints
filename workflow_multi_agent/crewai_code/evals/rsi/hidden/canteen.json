@@ -1,0 +1,84 @@
+{
+  "concepts": [
+    [
+      "Order",
+      "MealOrder"
+    ],
+    [
+      "Menu",
+      "MenuItem",
+      "Meal",
+      "Dish"
+    ],
+    [
+      "MealCard",
+      "Wallet",
+      "Account",
+      "Card"
+    ],
+    [
+      "PickupSlot",
+      "TimeSlot",
+      "Slot"
+    ]
+  ],
+  "rules": [
+    {
+      "id": "cutoff-10",
+      "any": [
+        "10:00",
+        "10\\s*点"
+      ]
+    },
+    {
+      "id": "cap-200",
+      "any": [
+        "\\b200\\b"
+      ]
+    },
+    {
+      "id": "void-30m",
+      "any": [
+        "30\\s*分钟",
+        "30\\s*min",
+        "minutes\\s*=\\s*30"
+      ]
+    }
+  ],
+  "diagrams": [
+    "class",
+    "sequence",
+    "er",
+    "state",
+    "c4"
+  ],
+  "states": [
+    [
+      "PLACED",
+      "CONFIRMED",
+      "PENDING",
+      "ORDERED"
+    ],
+    [
+      "PICKED_UP",
+      "COLLECTED",
+      "COMPLETED"
+    ],
+    [
+      "VOID",
+      "VOIDED",
+      "EXPIRED",
+      "FORFEITED",
+      "CANCELLED",
+      "CANCELED",
+      "CANCELLED_BY_USER",
+      "WITHDRAWN"
+    ]
+  ],
+  "endpoints": [
+    "(GET|POST|PUT|PATCH|DELETE)\\s+`?/\\S*(order)",
+    "GET\\s+`?/\\S*(menu)",
+    "(GET|POST|PUT|PATCH|DELETE)\\s+`?/\\S*(pick-?up|collect)",
+    "(GET|POST|PUT|PATCH|DELETE)\\s+`?/\\S*(card|wallet|balance|top-?up)"
+  ]
+}

@@ -57,6 +57,8 @@ class Settings:
     # Per-request timeout and retries: without one, a stalled connection hangs the run forever.
     llm_timeout: float = 300.0
     llm_max_retries: int = 2
+    # "blueprint": stop after requirements → architecture → blueprint (used by the RSI loop)
+    stop_after: str | None = None
 
     @classmethod
     def from_env(cls, **overrides) -> Settings:

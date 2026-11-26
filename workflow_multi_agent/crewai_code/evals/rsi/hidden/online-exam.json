@@ -1,0 +1,86 @@
+{
+  "concepts": [
+    [
+      "Exam",
+      "Test"
+    ],
+    [
+      "Question"
+    ],
+    [
+      "Submission",
+      "Attempt",
+      "AnswerSheet"
+    ],
+    [
+      "Answer",
+      "Response"
+    ],
+    [
+      "Grade",
+      "Score",
+      "Result"
+    ]
+  ],
+  "rules": [
+    {
+      "id": "limit-90m",
+      "any": [
+        "90\\s*分钟",
+        "90\\s*min",
+        "minutes\\s*=\\s*90"
+      ]
+    },
+    {
+      "id": "one-attempt",
+      "any": [
+        "1\\s*次",
+        "one\\s+attempt",
+        "only\\s+once",
+        "max_attempts\\s*[:=]\\s*1"
+      ]
+    },
+    {
+      "id": "tab-3",
+      "any": [
+        "3\\s*次",
+        "3\\s*(times|tab)"
+      ]
+    }
+  ],
+  "diagrams": [
+    "class",
+    "sequence",
+    "er",
+    "state",
+    "c4"
+  ],
+  "states": [
+    [
+      "NOT_STARTED",
+      "PENDING",
+      "SCHEDULED"
+    ],
+    [
+      "IN_PROGRESS",
+      "STARTED",
+      "ONGOING"
+    ],
+    [
+      "SUBMITTED",
+      "FINISHED"
+    ],
+    [
+      "GRADED",
+      "PUBLISHED",
+      "SCORED"
+    ]
+  ],
+  "endpoints": [
+    "(GET|POST|PUT|PATCH|DELETE)\\s+`?/\\S*(exam|paper)",
+    "(GET|POST|PUT|PATCH|DELETE)\\s+`?/\\S*(start|attempt)",
+    "(GET|POST|PUT|PATCH|DELETE)\\s+`?/\\S*(submit)",
+    "(GET|POST|PUT|PATCH|DELETE)\\s+`?/\\S*(grade|score|mark)",
+    "(GET|POST|PUT|PATCH|DELETE)\\s+`?/\\S*(question)"
+  ]
+}

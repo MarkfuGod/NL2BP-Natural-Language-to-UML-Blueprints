@@ -1,0 +1,88 @@
+{
+  "concepts": [
+    [
+      "Prescription"
+    ],
+    [
+      "Drug",
+      "Medicine",
+      "Medication"
+    ],
+    [
+      "Pharmacist"
+    ],
+    [
+      "Patient"
+    ],
+    [
+      "Dispense",
+      "Dispensing",
+      "DispenseRecord"
+    ]
+  ],
+  "rules": [
+    {
+      "id": "valid-3d",
+      "any": [
+        "3\\s*天",
+        "3\\s*days?",
+        "days\\s*=\\s*3"
+      ]
+    },
+    {
+      "id": "antibiotic-7d",
+      "any": [
+        "7\\s*天",
+        "7\\s*days?",
+        "days\\s*=\\s*7"
+      ]
+    },
+    {
+      "id": "partial",
+      "any": [
+        "部分",
+        "[Pp]artial"
+      ]
+    }
+  ],
+  "diagrams": [
+    "class",
+    "sequence",
+    "er",
+    "state",
+    "c4"
+  ],
+  "states": [
+    [
+      "ISSUED",
+      "CREATED",
+      "PENDING",
+      "NEW"
+    ],
+    [
+      "APPROVED",
+      "VERIFIED",
+      "REVIEWED"
+    ],
+    [
+      "DISPENSED",
+      "COMPLETED",
+      "FILLED"
+    ],
+    [
+      "PARTIALLY_DISPENSED",
+      "PARTIAL"
+    ],
+    [
+      "EXPIRED",
+      "REJECTED",
+      "VOID"
+    ]
+  ],
+  "endpoints": [
+    "(GET|POST|PUT|PATCH|DELETE)\\s+`?/\\S*(prescription)",
+    "(GET|POST|PUT|PATCH|DELETE)\\s+`?/\\S*(review|verify|approv)",
+    "(GET|POST|PUT|PATCH|DELETE)\\s+`?/\\S*(dispens)",
+    "(GET|POST|PUT|PATCH|DELETE)\\s+`?/\\S*(pick-?up|collect|code)"
+  ]
+}

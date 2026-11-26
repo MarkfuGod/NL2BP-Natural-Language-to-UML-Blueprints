@@ -1,0 +1,24 @@
+{
+  "train": [
+    "library",
+    "room-booking",
+    "parking",
+    "clinic",
+    "online-exam",
+    "warehouse",
+    "expense",
+    "canteen",
+    "gym",
+    "helpdesk",
+    "course-enroll",
+    "event-ticket"
+  ],
+  "heldout": [
+    "hotel",
+    "car-rental",
+    "pharmacy",
+    "coworking",
+    "vaccine",
+    "bug-tracker"
+  ]
+}

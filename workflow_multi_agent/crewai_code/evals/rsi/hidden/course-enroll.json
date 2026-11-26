@@ -1,0 +1,80 @@
+{
+  "concepts": [
+    [
+      "Course"
+    ],
+    [
+      "Enrollment",
+      "Registration",
+      "Selection"
+    ],
+    [
+      "Student"
+    ],
+    [
+      "Prerequisite"
+    ],
+    [
+      "Section",
+      "Schedule",
+      "TimeSlot",
+      "ClassSection"
+    ]
+  ],
+  "rules": [
+    {
+      "id": "credits-25",
+      "any": [
+        "\\b25\\b"
+      ]
+    },
+    {
+      "id": "prereq",
+      "any": [
+        "先修",
+        "[Pp]rerequisite"
+      ]
+    },
+    {
+      "id": "no-conflict",
+      "any": [
+        "冲突",
+        "[Cc]onflict",
+        "overlap"
+      ]
+    }
+  ],
+  "diagrams": [
+    "class",
+    "sequence",
+    "er",
+    "state",
+    "c4"
+  ],
+  "states": [
+    [
+      "ENROLLED",
+      "REGISTERED",
+      "SELECTED",
+      "CONFIRMED"
+    ],
+    [
+      "WAITLISTED",
+      "PENDING",
+      "QUEUED"
+    ],
+    [
+      "DROPPED",
+      "WITHDRAWN",
+      "CANCELLED",
+      "CANCELED",
+      "CANCELLED_BY_USER"
+    ]
+  ],
+  "endpoints": [
+    "(GET|POST|PUT|PATCH|DELETE)\\s+`?/\\S*(enroll|registration|selection)",
+    "(GET|POST|PUT|PATCH|DELETE)\\s+`?/\\S*(drop|withdraw)",
+    "GET\\s+`?/\\S*(course|section)",
+    "(GET|POST|PUT|PATCH|DELETE)\\s+`?/\\S*(capacity|window|period|phase)"
+  ]
+}

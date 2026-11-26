@@ -71,6 +71,7 @@ def _cmd_multi(args) -> None:
     from agileworkflow.agile_flow import AgileWorkflowFlow
 
     settings = _settings(args)
+    settings.stop_after = args.until
     name, desc = _project_inputs(args)
     sprint = args.sprint_days
     if sprint is None:
@@ -138,6 +139,11 @@ def build_parser() -> argparse.ArgumentParser:
     multi.add_argument("--sprint-days", type=int, help="Sprint 周期（天）, default 14")
     multi.add_argument(
         "--review", action="store_true", help="蓝图生成后暂停，由你评审（人类协作者）"
+    )
+    multi.add_argument(
+        "--until",
+        choices=["blueprint"],
+        help="只运行到蓝图（需求 → 架构 → 蓝图，含图校验与修复），不生成代码",
     )
     multi.set_defaults(func=_cmd_multi)
 

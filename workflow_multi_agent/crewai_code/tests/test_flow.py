@@ -115,3 +115,13 @@ def test_rejects_bad_inputs(settings):
         flow.kickoff(
             inputs={"project_name": "x", "project_description": "y", "sprint_duration": "0"}
         )
+
+
+def test_until_blueprint_runs_only_design_stages(settings):
+    settings.stop_after = "blueprint"
+    runner = StubRunner()
+    flow, _ = _kickoff(settings, runner)
+    assert runner.started == ["requirement_analysis", "system_design", "blueprint_design"]
+    manifest = json.loads((flow.workspace.root / "manifest.json").read_text())
+    assert manifest["stop_after"] == "blueprint"
+    assert (flow.workspace.root / "docs" / "blueprint_design.md").is_file()
