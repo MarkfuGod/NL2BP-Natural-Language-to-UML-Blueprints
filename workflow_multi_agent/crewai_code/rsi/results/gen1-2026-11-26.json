@@ -1,0 +1,109 @@
+{
+  "date": "2026-11-26",
+  "base_commit": "d44d8b1",
+  "generation": 1,
+  "parent": "v0",
+  "strategy": "v0",
+  "edits": [
+    {
+      "file": "workflow_multi_agent/crewai_code/agileworkflow/crews/agile_crew/config/tasks.yaml",
+      "old": "    4. The interface table and the data flow.\n\n    {blueprint_guide}",
+      "new": "    4. The interface table and the data flow.\n    5. Coverage: every BR-* rule is enforced in a named class attribute/method, an\n       interface-table endpoint, a state transition or guard, or a sequence message; every\n       lifecycle state the requirements name appears in the state diagram under that same\n       name; every domain concept the requirements name is a class, enum or attribute.\n\n    {blueprint_guide}"
+    },
+    {
+      "file": "skills/nl2bp/references/output-contract.md",
+      "old": "- Declare every domain type and service interface the code must contain.\n- Attribute and method signatures use the target language's types.",
+      "new": "- Declare every domain type and service interface the code must contain, including every\n  concept the requirements name (actors and roles, records, policies, schedules, places) —\n  none may survive only in prose.\n- Give every business rule a named home: an attribute, constant or method on the class that\n  enforces it.\n- Attribute and method signatures use the target language's types."
+    }
+  ],
+  "rationale": "The dominant failure is traceability loss: business rules (9×), domain concepts (8×) and lifecycle states (4×) exist in requirements.md but never reach blueprint.md, because the blueprint stage is specified as a list of diagram kinds only — nothing requires the designer to carry over every BR-* rule, every named concept, or every named status. The edit adds a short, general coverage step to the blueprint task (no domain specifics) and sharpens the class-diagram contract so the requirement vocabulary (actors, records, policies, schedules, places) and each rule must surface as a declared type, attribute, constant or method, with state diagrams reusing the requirement's state names.",
+  "status": "minibatch: not better",
+  "delta_minibatch": 0.0586,
+  "delta_mini_threshold": 0.0712,
+  "minibatch": {
+    "parking": {
+      "child": 0.8167,
+      "baseline": 0.7563,
+      "parts": {
+        "validity": 1.0,
+        "concepts": 0.75,
+        "rules": 0.75,
+        "endpoints": 1.0,
+        "states": 0.667,
+        "diagrams": 1.0,
+        "n_diagrams": 25
+      }
+    },
+    "expense": {
+      "child": 0.93,
+      "baseline": 0.825,
+      "parts": {
+        "validity": 1.0,
+        "concepts": 1.0,
+        "rules": 1.0,
+        "endpoints": 0.8,
+        "states": 0.6,
+        "diagrams": 1.0,
+        "n_diagrams": 21
+      }
+    },
+    "library": {
+      "child": 1.0,
+      "baseline": 0.975,
+      "parts": {
+        "validity": 1.0,
+        "concepts": 1.0,
+        "rules": 1.0,
+        "endpoints": 1.0,
+        "states": 1.0,
+        "diagrams": 1.0,
+        "n_diagrams": 24
+      }
+    },
+    "room-booking": {
+      "child": 1.0,
+      "baseline": 0.95,
+      "parts": {
+        "validity": 1.0,
+        "concepts": 1.0,
+        "rules": 1.0,
+        "endpoints": 1.0,
+        "states": 1.0,
+        "diagrams": 1.0,
+        "n_diagrams": 24
+      }
+    },
+    "gym": {
+      "child": 0.8525,
+      "baseline": 0.7812,
+      "parts": {
+        "validity": 1.0,
+        "concepts": 0.8,
+        "rules": 0.833,
+        "endpoints": 0.75,
+        "states": 1.0,
+        "diagrams": 1.0,
+        "n_diagrams": 27
+      }
+    },
+    "event-ticket": {
+      "child": 0.92,
+      "baseline": 0.88,
+      "parts": {
+        "validity": 1.0,
+        "concepts": 1.0,
+        "rules": 0.833,
+        "endpoints": 1.0,
+        "states": 1.0,
+        "diagrams": 0.8,
+        "n_diagrams": 31
+      }
+    }
+  },
+  "spent_usd": 0.58,
+  "notes": [
+    "All 6 minibatch requirements improved over the baseline mean (exploratory: not a pre-registered criterion).",
+    "Below the pre-registered minibatch margin, so no full-train or held-out evaluation was run.",
+    "An earlier attempt the same day lost its results to a relative-path bug in the loop (0.22 USD); fixed, rerun."
+  ]
+}

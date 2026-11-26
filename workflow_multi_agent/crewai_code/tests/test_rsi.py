@@ -119,3 +119,52 @@ def test_loop_stops_at_budget(tmp_path):
     )
     rep = loop.run()
     assert rep["generations"] == 0
+
+
+def test_materialise_with_relative_path(tmp_path, monkeypatch):
+    import subprocess
+
+    from rsi.variants import materialise, remove
+
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    subprocess.run(["git", "init", "-q", "-b", "main"], cwd=repo, check=True)
+    (repo / "a.txt").write_text("base\n")
+    subprocess.run(["git", "add", "."], cwd=repo, check=True)
+    subprocess.run(["git", "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-qm", "b"],
+                   cwd=repo, check=True)  # fmt: skip
+    work = tmp_path / "elsewhere"
+    work.mkdir()
+    monkeypatch.chdir(work)  # cwd differs from repo, as in the real loop
+    wt = materialise(repo, "HEAD", {"a.txt": "variant\n"}, Path("out/v1/worktree"))
+    assert wt == (work / "out/v1/worktree").resolve()
+    assert (wt / "a.txt").read_text() == "variant\n"
+    assert (repo / "a.txt").read_text() == "base\n"
+    remove(repo, wt)
+    assert not wt.exists()
+
+
+def test_harness_failure_is_not_counted_as_regression(tmp_path):
+    train = [f"t{i}" for i in range(12)]
+    cfg = Config(train, ["h"], sigma=0.01, generations=1)
+    seen = []
+
+    def evaluate(files, names, out):
+        seen.append(out)
+        return {
+            "mean": 0.0,
+            "per_req": {n: {"score": 0.0, "error": "no run directory"} for n in names},
+        }
+
+    reply = json.dumps(
+        {"rationale": "r", "edits": [{"file": SURFACE[0], "old": "line two", "new": "x"}]}
+    )
+    loop = Loop(cfg, Path("relative/out"), dict(FILES), _scores(train, 0.6), evaluate,
+                lambda m: reply, lambda: 0.0)  # fmt: skip
+    loop.out = tmp_path  # keep test artefacts in tmp
+    rep = loop.run()
+    child = loop.archive[1]
+    assert child.status.startswith("error") and child.delta is None
+    assert rep["strategy_stats"][0]["n"] == 0
+    assert Loop(cfg, Path("relative/out"), dict(FILES), _scores(train, 0.6), evaluate,
+                lambda m: reply, lambda: 0.0).out.is_absolute()  # fmt: skip

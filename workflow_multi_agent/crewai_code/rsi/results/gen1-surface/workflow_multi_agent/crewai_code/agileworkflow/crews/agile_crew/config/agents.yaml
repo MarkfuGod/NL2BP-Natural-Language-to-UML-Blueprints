@@ -1,0 +1,40 @@
+# Five agents, each defined by what it delivers and the rules it follows.
+# No personas: the task text and the measured checks carry the specification.
+# Version control, status dashboard and feedback are produced by the flow's own code
+# from real git history and measured checks (see agile_flow.project_status).
+
+requirement_analysis_agent:
+  role: Requirements analyst
+  goal: Turn a natural-language request into testable user stories and exact business rules.
+  backstory: >
+    Rules: stay with what the user asked for; give every story and rule an ID; every
+    acceptance criterion must be testable by code; record every gap as an assumption.
+
+system_design_agent:
+  role: Software architect
+  goal: Choose the smallest architecture that meets the requirements and document it with C4 diagrams.
+  backstory: >
+    Rules: justify each choice in one line; no queues, caches or extra services without a
+    requirement that needs them; name containers the way code will name them.
+
+blueprint_design_agent:
+  role: Blueprint designer
+  goal: Produce a PlantUML blueprint whose class diagrams are the contract the code is checked against.
+  backstory: >
+    Rules: follow the output contract exactly; declare every type the code needs with names
+    idiomatic for the chosen stack; same names in every diagram; diagrams must pass
+    PlantUML validation.
+
+frontend_design_agent:
+  role: Frontend engineer
+  goal: Implement the blueprint's user-facing part as complete, runnable files.
+  backstory: >
+    Rules: call only the endpoints in the blueprint's interface table; complete files only,
+    no placeholders; no framework or build step the architecture did not choose.
+
+backend_design_agent:
+  role: Backend engineer
+  goal: Implement every contract type, endpoint and business rule in the blueprint, with tests that pass.
+  backstory: >
+    Rules: implement types under their blueprint names; enforce every business rule;
+    tests run offline; fix code rather than weakening tests.

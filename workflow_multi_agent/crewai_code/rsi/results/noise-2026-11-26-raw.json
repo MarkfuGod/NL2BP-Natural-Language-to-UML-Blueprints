@@ -1,0 +1,493 @@
+{
+  "A": {
+    "mean": 0.8708,
+    "per_req": {
+      "library": {
+        "name": "library",
+        "score": 0.95,
+        "parts": {
+          "validity": 1.0,
+          "concepts": 1.0,
+          "rules": 0.833,
+          "endpoints": 1.0,
+          "states": 1.0,
+          "diagrams": 1.0,
+          "n_diagrams": 26
+        },
+        "feedback": [
+          "Business rules stated in requirements but absent from the blueprint: fine-0.5"
+        ],
+        "tokens": 110800,
+        "seconds": 327.9,
+        "error": null
+      },
+      "room-booking": {
+        "name": "room-booking",
+        "score": 0.95,
+        "parts": {
+          "validity": 1.0,
+          "concepts": 1.0,
+          "rules": 0.833,
+          "endpoints": 1.0,
+          "states": 1.0,
+          "diagrams": 1.0,
+          "n_diagrams": 30
+        },
+        "feedback": [
+          "Business rules stated in requirements but absent from the blueprint: max-4h"
+        ],
+        "tokens": 120239,
+        "seconds": 307.2,
+        "error": null
+      },
+      "parking": {
+        "name": "parking",
+        "score": 0.775,
+        "parts": {
+          "validity": 1.0,
+          "concepts": 0.5,
+          "rules": 0.75,
+          "endpoints": 1.0,
+          "states": 1.0,
+          "diagrams": 1.0,
+          "n_diagrams": 22
+        },
+        "feedback": [
+          "Domain concepts the blueprint's class/ER diagrams never declare as a type: Vehicle/Car; Visitor/Guest/VisitorVehicle",
+          "Business rules stated in requirements but absent from the blueprint: one-per-day, advance-7d"
+        ],
+        "tokens": 105962,
+        "seconds": 407.6,
+        "error": null
+      },
+      "clinic": {
+        "name": "clinic",
+        "score": 0.94,
+        "parts": {
+          "validity": 1.0,
+          "concepts": 0.8,
+          "rules": 1.0,
+          "endpoints": 1.0,
+          "states": 1.0,
+          "diagrams": 1.0,
+          "n_diagrams": 23
+        },
+        "feedback": [
+          "Domain concepts the blueprint's class/ER diagrams never declare as a type: TimeSlot/Slot/Schedule"
+        ],
+        "tokens": 120704,
+        "seconds": 407.6,
+        "error": null
+      },
+      "online-exam": {
+        "name": "online-exam",
+        "score": 0.95,
+        "parts": {
+          "validity": 1.0,
+          "concepts": 1.0,
+          "rules": 0.833,
+          "endpoints": 1.0,
+          "states": 1.0,
+          "diagrams": 1.0,
+          "n_diagrams": 36
+        },
+        "feedback": [
+          "Business rules stated in requirements but absent from the blueprint: limit-90m"
+        ],
+        "tokens": 115149,
+        "seconds": 271.0,
+        "error": null
+      },
+      "warehouse": {
+        "name": "warehouse",
+        "score": 0.75,
+        "parts": {
+          "validity": 1.0,
+          "concepts": 0.5,
+          "rules": 0.833,
+          "endpoints": 1.0,
+          "states": 0.5,
+          "diagrams": 1.0,
+          "n_diagrams": 23
+        },
+        "feedback": [
+          "Domain concepts the blueprint's class/ER diagrams never declare as a type: StockMovement/InventoryTransaction/Movement; Location/BinLocation/StorageLocation",
+          "Business rules stated in requirements but absent from the blueprint: expiry-30d",
+          "Lifecycle states missing from the state diagrams: NEAR_EXPIRY/EXPIRING; EXPIRED"
+        ],
+        "tokens": 113962,
+        "seconds": 419.2,
+        "error": null
+      },
+      "expense": {
+        "name": "expense",
+        "score": 0.7875,
+        "parts": {
+          "validity": 1.0,
+          "concepts": 0.75,
+          "rules": 0.875,
+          "endpoints": 0.6,
+          "states": 0.6,
+          "diagrams": 1.0,
+          "n_diagrams": 19
+        },
+        "feedback": [
+          "Domain concepts the blueprint's class/ER diagrams never declare as a type: Employee/User",
+          "Business rules stated in requirements but absent from the blueprint: resubmit-2",
+          "2 key API operations are not named in the blueprint's interface (endpoint table / sequence messages).",
+          "Lifecycle states missing from the state diagrams: SUBMITTED/PENDING; APPROVED"
+        ],
+        "tokens": 110721,
+        "seconds": 290.7,
+        "error": null
+      },
+      "canteen": {
+        "name": "canteen",
+        "score": 0.925,
+        "parts": {
+          "validity": 1.0,
+          "concepts": 0.75,
+          "rules": 1.0,
+          "endpoints": 1.0,
+          "states": 1.0,
+          "diagrams": 1.0,
+          "n_diagrams": 25
+        },
+        "feedback": [
+          "Domain concepts the blueprint's class/ER diagrams never declare as a type: MealCard/Wallet/Account"
+        ],
+        "tokens": 107391,
+        "seconds": 412.3,
+        "error": null
+      },
+      "gym": {
+        "name": "gym",
+        "score": 0.85,
+        "parts": {
+          "validity": 1.0,
+          "concepts": 0.8,
+          "rules": 0.833,
+          "endpoints": 1.0,
+          "states": 0.6,
+          "diagrams": 1.0,
+          "n_diagrams": 24
+        },
+        "feedback": [
+          "Domain concepts the blueprint's class/ER diagrams never declare as a type: Class/GroupClass/Course",
+          "Business rules stated in requirements but absent from the blueprint: suspend-2",
+          "Lifecycle states missing from the state diagrams: ATTENDED/CHECKED_IN; NO_SHOW/ABSENT"
+        ],
+        "tokens": 103820,
+        "seconds": 378.1,
+        "error": null
+      },
+      "helpdesk": {
+        "name": "helpdesk",
+        "score": 0.75,
+        "parts": {
+          "validity": 1.0,
+          "concepts": 0.5,
+          "rules": 0.833,
+          "endpoints": 0.8,
+          "states": 0.8,
+          "diagrams": 1.0,
+          "n_diagrams": 32
+        },
+        "feedback": [
+          "Domain concepts the blueprint's class/ER diagrams never declare as a type: Engineer/Agent/Technician; SLA/SlaPolicy/ServiceLevel",
+          "Business rules stated in requirements but absent from the blueprint: autoclose-3d",
+          "1 key API operations are not named in the blueprint's interface (endpoint table / sequence messages).",
+          "Lifecycle states missing from the state diagrams: WAITING/PENDING_USER"
+        ],
+        "tokens": 112517,
+        "seconds": 283.6,
+        "error": null
+      },
+      "course-enroll": {
+        "name": "course-enroll",
+        "score": 0.9625,
+        "parts": {
+          "validity": 1.0,
+          "concepts": 1.0,
+          "rules": 1.0,
+          "endpoints": 0.75,
+          "states": 1.0,
+          "diagrams": 1.0,
+          "n_diagrams": 24
+        },
+        "feedback": [
+          "1 key API operations are not named in the blueprint's interface (endpoint table / sequence messages)."
+        ],
+        "tokens": 96777,
+        "seconds": 326.8,
+        "error": null
+      },
+      "event-ticket": {
+        "name": "event-ticket",
+        "score": 0.86,
+        "parts": {
+          "validity": 1.0,
+          "concepts": 0.8,
+          "rules": 0.833,
+          "endpoints": 0.8,
+          "states": 1.0,
+          "diagrams": 1.0,
+          "n_diagrams": 25
+        },
+        "feedback": [
+          "Domain concepts the blueprint's class/ER diagrams never declare as a type: Venue/SeatMap/Hall",
+          "Business rules stated in requirements but absent from the blueprint: lock-15m",
+          "1 key API operations are not named in the blueprint's interface (endpoint table / sequence messages)."
+        ],
+        "tokens": 137833,
+        "seconds": 394.7,
+        "error": null
+      }
+    },
+    "tokens": 1355875
+  },
+  "B": {
+    "mean": 0.861,
+    "per_req": {
+      "library": {
+        "name": "library",
+        "score": 1.0,
+        "parts": {
+          "validity": 1.0,
+          "concepts": 1.0,
+          "rules": 1.0,
+          "endpoints": 1.0,
+          "states": 1.0,
+          "diagrams": 1.0,
+          "n_diagrams": 21
+        },
+        "feedback": [],
+        "tokens": 107397,
+        "seconds": 314.5,
+        "error": null
+      },
+      "room-booking": {
+        "name": "room-booking",
+        "score": 0.95,
+        "parts": {
+          "validity": 1.0,
+          "concepts": 1.0,
+          "rules": 0.833,
+          "endpoints": 1.0,
+          "states": 1.0,
+          "diagrams": 1.0,
+          "n_diagrams": 19
+        },
+        "feedback": [
+          "Business rules stated in requirements but absent from the blueprint: advance-30d"
+        ],
+        "tokens": 107143,
+        "seconds": 293.9,
+        "error": null
+      },
+      "parking": {
+        "name": "parking",
+        "score": 0.7375,
+        "parts": {
+          "validity": 1.0,
+          "concepts": 0.5,
+          "rules": 0.625,
+          "endpoints": 1.0,
+          "states": 1.0,
+          "diagrams": 1.0,
+          "n_diagrams": 26
+        },
+        "feedback": [
+          "Domain concepts the blueprint's class/ER diagrams never declare as a type: Vehicle/Car; Visitor/Guest/VisitorVehicle",
+          "Business rules stated in requirements but absent from the blueprint: advance-7d",
+          "Business rules missing from both documents: one-per-day"
+        ],
+        "tokens": 113900,
+        "seconds": 484.6,
+        "error": null
+      },
+      "clinic": {
+        "name": "clinic",
+        "score": 0.94,
+        "parts": {
+          "validity": 1.0,
+          "concepts": 0.8,
+          "rules": 1.0,
+          "endpoints": 1.0,
+          "states": 1.0,
+          "diagrams": 1.0,
+          "n_diagrams": 25
+        },
+        "feedback": [
+          "Domain concepts the blueprint's class/ER diagrams never declare as a type: Patient"
+        ],
+        "tokens": 102309,
+        "seconds": 280.9,
+        "error": null
+      },
+      "online-exam": {
+        "name": "online-exam",
+        "score": 0.79,
+        "parts": {
+          "validity": 1.0,
+          "concepts": 0.8,
+          "rules": 0.5,
+          "endpoints": 1.0,
+          "states": 1.0,
+          "diagrams": 1.0,
+          "n_diagrams": 26
+        },
+        "feedback": [
+          "Domain concepts the blueprint's class/ER diagrams never declare as a type: Grade/Score/Result",
+          "Business rules stated in requirements but absent from the blueprint: limit-90m, one-attempt, tab-3"
+        ],
+        "tokens": 102697,
+        "seconds": 274.5,
+        "error": null
+      },
+      "warehouse": {
+        "name": "warehouse",
+        "score": 0.875,
+        "parts": {
+          "validity": 1.0,
+          "concepts": 0.75,
+          "rules": 0.833,
+          "endpoints": 1.0,
+          "states": 1.0,
+          "diagrams": 1.0,
+          "n_diagrams": 23
+        },
+        "feedback": [
+          "Domain concepts the blueprint's class/ER diagrams never declare as a type: Location/BinLocation/StorageLocation",
+          "Business rules stated in requirements but absent from the blueprint: expiry-30d"
+        ],
+        "tokens": 116772,
+        "seconds": 432.1,
+        "error": null
+      },
+      "expense": {
+        "name": "expense",
+        "score": 0.8625,
+        "parts": {
+          "validity": 1.0,
+          "concepts": 1.0,
+          "rules": 0.875,
+          "endpoints": 0.6,
+          "states": 0.6,
+          "diagrams": 1.0,
+          "n_diagrams": 26
+        },
+        "feedback": [
+          "Business rules stated in requirements but absent from the blueprint: resubmit-2",
+          "2 key API operations are not named in the blueprint's interface (endpoint table / sequence messages).",
+          "Lifecycle states missing from the state diagrams: SUBMITTED/PENDING; APPROVED"
+        ],
+        "tokens": 113606,
+        "seconds": 277.6,
+        "error": null
+      },
+      "canteen": {
+        "name": "canteen",
+        "score": 0.925,
+        "parts": {
+          "validity": 1.0,
+          "concepts": 0.75,
+          "rules": 1.0,
+          "endpoints": 1.0,
+          "states": 1.0,
+          "diagrams": 1.0,
+          "n_diagrams": 25
+        },
+        "feedback": [
+          "Domain concepts the blueprint's class/ER diagrams never declare as a type: MealCard/Wallet/Account"
+        ],
+        "tokens": 112683,
+        "seconds": 434.1,
+        "error": null
+      },
+      "gym": {
+        "name": "gym",
+        "score": 0.7125,
+        "parts": {
+          "validity": 1.0,
+          "concepts": 0.4,
+          "rules": 0.833,
+          "endpoints": 0.75,
+          "states": 0.8,
+          "diagrams": 1.0,
+          "n_diagrams": 31
+        },
+        "feedback": [
+          "Domain concepts the blueprint's class/ER diagrams never declare as a type: Member; Waitlist/WaitlistEntry; Coach/Trainer/Instructor",
+          "Business rules stated in requirements but absent from the blueprint: suspend-2",
+          "1 key API operations are not named in the blueprint's interface (endpoint table / sequence messages).",
+          "Lifecycle states missing from the state diagrams: WAITLISTED/WAITING"
+        ],
+        "tokens": 125253,
+        "seconds": 395.2,
+        "error": null
+      },
+      "helpdesk": {
+        "name": "helpdesk",
+        "score": 0.64,
+        "parts": {
+          "validity": 1.0,
+          "concepts": 0.5,
+          "rules": 0.667,
+          "endpoints": 0.4,
+          "states": 0.8,
+          "diagrams": 1.0,
+          "n_diagrams": 29
+        },
+        "feedback": [
+          "Domain concepts the blueprint's class/ER diagrams never declare as a type: Comment/WorkLog/Note; Engineer/Agent/Technician",
+          "Business rules stated in requirements but absent from the blueprint: p1-1h-4h, p2-24h",
+          "3 key API operations are not named in the blueprint's interface (endpoint table / sequence messages).",
+          "Lifecycle states missing from the state diagrams: WAITING/PENDING_USER"
+        ],
+        "tokens": 119174,
+        "seconds": 288.6,
+        "error": null
+      },
+      "course-enroll": {
+        "name": "course-enroll",
+        "score": 1.0,
+        "parts": {
+          "validity": 1.0,
+          "concepts": 1.0,
+          "rules": 1.0,
+          "endpoints": 1.0,
+          "states": 1.0,
+          "diagrams": 1.0,
+          "n_diagrams": 24
+        },
+        "feedback": [],
+        "tokens": 105123,
+        "seconds": 307.0,
+        "error": null
+      },
+      "event-ticket": {
+        "name": "event-ticket",
+        "score": 0.9,
+        "parts": {
+          "validity": 1.0,
+          "concepts": 1.0,
+          "rules": 0.667,
+          "endpoints": 1.0,
+          "states": 1.0,
+          "diagrams": 1.0,
+          "n_diagrams": 29
+        },
+        "feedback": [
+          "Business rules stated in requirements but absent from the blueprint: lock-15m, refund-48h-10"
+        ],
+        "tokens": 112660,
+        "seconds": 384.4,
+        "error": null
+      }
+    },
+    "tokens": 1338717
+  },
+  "spend_usd": 1.13,
+  "minutes": 17.6
+}

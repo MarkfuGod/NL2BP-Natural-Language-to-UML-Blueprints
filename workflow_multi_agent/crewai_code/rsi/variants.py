@@ -65,6 +65,7 @@ def apply_edits(files: dict[str, str], edits: list[dict], baseline_size: int) ->
 
 def materialise(repo: Path, base_commit: str, files: dict[str, str], dest: Path) -> Path:
     """A git worktree at base_commit with the variant's surface files written over it."""
+    dest = dest.resolve()  # git runs in `repo`; a relative path would land somewhere else
     if dest.exists():
         subprocess.run(["git", "worktree", "remove", "--force", str(dest)], cwd=repo,
                        capture_output=True)  # fmt: skip
@@ -77,7 +78,7 @@ def materialise(repo: Path, base_commit: str, files: dict[str, str], dest: Path)
 
 
 def remove(repo: Path, dest: Path) -> None:
-    subprocess.run(["git", "worktree", "remove", "--force", str(dest)], cwd=repo,
+    subprocess.run(["git", "worktree", "remove", "--force", str(dest.resolve())], cwd=repo,
                    capture_output=True)  # fmt: skip
 
 

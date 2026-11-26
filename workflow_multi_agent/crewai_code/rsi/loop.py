@@ -81,6 +81,7 @@ class Loop:
         llm: Callable[[list[dict]], str],
         spent: Callable[[], float],
     ):
+        out = out.resolve()  # fitness runs inside each variant's worktree; keep paths absolute
         self.cfg, self.out = cfg, out
         self.evaluate, self.llm, self.spent = evaluate, llm, spent
         self.rng = random.Random(cfg.seed)
@@ -151,6 +152,10 @@ class Loop:
         self.files[child.id] = files
         mini = self.rng.sample(self.cfg.train, self.cfg.minibatch)
         res = self.evaluate(files, mini, self.out / child.id / "mini")
+        if all(r.get("error") for r in res["per_req"].values()):
+            # every run failed to produce output: a harness fault, not evidence about the edit
+            child.status = "error: evaluation produced no runs"
+            return child
         child.train.update(res["per_req"])
         child.delta = round(mean_score(child.train, mini) - mean_score(parent.train, mini), 4)
         if child.delta <= self.cfg.delta_mini:
@@ -257,6 +262,7 @@ def main() -> int:  # pragma: no cover - needs network and a model key
     ap.add_argument("--generations", type=int, default=20)
     ap.add_argument("--budget", type=float, default=3.5)
     a = ap.parse_args()
+    a.out = a.out.resolve()
 
     noise = json.loads(a.noise.read_text())
     A, B = noise["A"]["per_req"], noise["B"]["per_req"]
